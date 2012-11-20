@@ -35,11 +35,11 @@ void prepare_to_wait_target(wait_queue_head_t *q, wait_queue_t *wait, int state,
         unsigned long flags;
 
         wait->flags &= ~WQ_FLAG_EXCLUSIVE;
-        spin_lock_irqsave(&q->lock, flags);
+//        spin_lock_irqsave(&q->lock, flags);
         if (list_empty(&wait->task_list))
-                __add_wait_queue(q, wait);
+                list_add(q, target);
         set_target_state(target,state);
-        spin_unlock_irqrestore(&q->lock, flags);
+//        spin_unlock_irqrestore(&q->lock, flags);
 }
 EXPORT_SYMBOL(prepare_to_wait_target);
 
@@ -56,6 +56,7 @@ const char *lagdev="/dev/lag";
 int read=0;
 int lag_pid=-2;
 int state=-2;
+int block=1;
 
 int module_used=0;
 
@@ -140,13 +141,17 @@ ssize_t lag_write(struct file *target_file, const char __user *buf, size_t mleng
 	}
 	if (tmp->REQID==1)
 	{
+		printk(KERN_DEBUG "pid: %i",current->pid);
+		schedule();	
+		printk(KERN_DEBUG "pid: %i",current->pid);
 		struct task_struct *tlist = &init_task;
 		do {
 			printk(KERN_DEBUG "patrze na proces %i tmp_pid %i",tlist->pid,tmp->pid);
 			if (tlist->pid == tmp->pid) {
 				//struct p=memcpy(
-				wait_event_target(lag_wq, 1==0 ,tlist);
+				wait_event_target(lag_wq, block==1 ,tlist);
 				state = tlist->state;
+				schedule();
 				lag_pid=tmp->pid;
 				printk(KERN_DEBUG "proces %i ma status %i",tlist->pid,tlist->state);
 				return mlength;
@@ -155,14 +160,7 @@ ssize_t lag_write(struct file *target_file, const char __user *buf, size_t mleng
 	}
 	if (tmp->REQID==2)
 	{
-		struct task_struct *tlist = &init_task;
-		//do {
-			printk(KERN_DEBUG "patrze na proces %i tmp_pid %i",tlist->pid,tmp->pid);
-			//if (tlist->pid == tmp->pid) {
-				printk(KERN_DEBUG "proces %i ma status %i",tlist->pid,tlist->state);
-				return mlength;
-			//}
-		//} while ( (tlist = next_task(tlist)) != &init_task );
+		block=0;
 	}
 	return mlength;
 }
