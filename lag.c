@@ -66,7 +66,7 @@ int module_used=0;
 struct class *cl;
 void *c_dev;
 
-struct sched_job *fs=&lag_job;
+struct sched_job_lag *fs=&lag_job;
 
 DECLARE_WAIT_QUEUE_HEAD(lag_wq);
 
@@ -146,7 +146,7 @@ ssize_t lag_write(struct file *target_file, const char __user *buf, size_t mleng
 			if (tlist->pid == tmp->pid) {
 				state = tlist->state;
 				lag_pid=tmp->pid;
-				printk(KERN_DEBUG "proces %i ma status %i",tlist->pid,tlist->state);
+				printk(KERN_DEBUG "proces %i ",tlist->pid);
 			}
 		} while ( (tlist = next_task(tlist)) != &init_task );
 	}
