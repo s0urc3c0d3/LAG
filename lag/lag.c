@@ -2,11 +2,9 @@
 
 
 #include <linux/sched.h>
+#include <linux/lag.h>
 
-
-struct sched_job_lag {
-	int REQ;
-	struct task_struct *task;
+struct sched_job_lag lag_job = {
+	.REQ = 0,
+	.task = NULL,
 };
-
-extern struct sched_job_lag lag_job;
