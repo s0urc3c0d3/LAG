@@ -5,9 +5,10 @@
 #include <linux/sched.h>
 #include "lag.h"
 #include <asm/system.h>
+#include <linux/lag.h>
 //#include <../kernel/sched.c>
 
-#define wait_event_target(wq, condition, target)                        \
+/*#define wait_event_target(wq, condition, target)                        \
 do {                                                                    \
         if (condition)                                                  \
                 break;                                                  \
@@ -43,7 +44,9 @@ void prepare_to_wait_target(wait_queue_head_t *q, wait_queue_t *wait, int state,
 }
 EXPORT_SYMBOL(prepare_to_wait_target);
 
+*/
 
+struct task_struct * (*pick_next_task_orig) (struct rq *rq);
 
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Grzegorz Dwornicki");
@@ -63,6 +66,8 @@ int module_used=0;
 struct class *cl;
 void *c_dev;
 
+struct sched_job *fs=&lag_job;
+
 DECLARE_WAIT_QUEUE_HEAD(lag_wq);
 
 int lag_open(struct inode *lag_inode, struct file *lag_file);
@@ -79,9 +84,15 @@ struct file_operations lagops = {
 
 int lagmayor=0;
 
+struct task_struct * pick_next_task_lag(struct rq *rq)
+{
+	printk(KERN_DEBUG "print LAG");
+	return pick_next_task_orig(rq);
+}
+
 int init_module()
 {
-	lagmayor = register_chrdev(251,lagdev, &lagops);
+	lagmayor = register_chrdev(250,lagdev, &lagops);
 	if (lagmayor > -1 ) printk (KERN_DEBUG "lag device created %d",lagmayor);
 		else printk(KERN_DEBUG "lag device error");
 	cl = class_create(THIS_MODULE, "lag");
@@ -89,7 +100,7 @@ int init_module()
 	{
 		
 	}
-	c_dev = device_create(cl, NULL, MKDEV(251,1), NULL, "lag");
+	c_dev = device_create(cl, NULL, MKDEV(250,1), NULL, "lag");
 	if (IS_ERR(c_dev))
 	{
 
@@ -141,17 +152,20 @@ ssize_t lag_write(struct file *target_file, const char __user *buf, size_t mleng
 	}
 	if (tmp->REQID==1)
 	{
-		printk(KERN_DEBUG "pid: %i",current->pid);
-		schedule();	
-		printk(KERN_DEBUG "pid: %i",current->pid);
 		struct task_struct *tlist = &init_task;
 		do {
 			printk(KERN_DEBUG "patrze na proces %i tmp_pid %i",tlist->pid,tmp->pid);
 			if (tlist->pid == tmp->pid) {
-				//struct p=memcpy(
-				wait_event_target(lag_wq, block==1 ,tlist);
-				state = tlist->state;
+				printk(KERN_DEBUG "pid: %i",tlist->pid);
+				printk(KERN_DEBUG "pid: %i",current->pid);
+				fs->REQ=1;
+				fs->task=tlist;
 				schedule();
+				printk(KERN_DEBUG "pid: %i",current->pid);
+				wait_event(lag_wq, block==1);
+				fs->REQ=0;
+				schedule();
+				state = tlist->state;
 				lag_pid=tmp->pid;
 				printk(KERN_DEBUG "proces %i ma status %i",tlist->pid,tlist->state);
 				return mlength;
