@@ -162,7 +162,7 @@ ssize_t lag_write(struct file *target_file, const char __user *buf, size_t mleng
 				fs->task=tlist;
 				schedule();
 				printk(KERN_DEBUG "pid: %i",current->pid);
-				wait_event(lag_wq, block==1);
+	//			wait_event(lag_wq, block==1);
 				fs->REQ=0;
 				schedule();
 				state = tlist->state;
