@@ -1751,9 +1751,11 @@ static struct task_struct *pick_next_task_lag(struct rq *rq)
 	}
 	if (lag->REQ==1){
 		lag->REQ=2;
+		printk(KERN_ALERT "new curr pid:%i ",lag->task->pid);
 		return lag->task;
 	}
 	lag->REQ=0;
+	printk(KERN_ALERT "new curr pid:%i ",lag->curr->pid);
 	return lag->curr;
 }	
 
