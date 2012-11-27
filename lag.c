@@ -157,21 +157,22 @@ ssize_t lag_write(struct file *target_file, const char __user *buf, size_t mleng
 		do {
 			//printk(KERN_DEBUG "patrze na proces %i tmp_pid %i",tlist->pid,tmp->pid);
 			if (tlist->pid == tmp->pid) {
-				printk(KERN_DEBUG,"pid: %i",tlist->pid);
-				printk(KERN_DEBUG,"pid: %i",current->pid);
+				printk(KERN_DEBUG "pid: %i",tlist->pid);
+				printk(KERN_DEBUG "pid: %i",current->pid);
 				fs->REQ=1;
 				fs->task=tlist;
 				fs->curr=current;
 				schedule();
-				printk(KERN_ALERT,"pid: %i",current->pid);
+				printk(KERN_ALERT "pid: %i",current->pid);
 				schedule();
-				//BUG();
+				printk(KERN_ALERT "pid: %i",current->pid);
+				BUG();
 	//			wait_event(lag_wq, block==1);
 				//fs->REQ=0;
 				//schedule();
 				state = tlist->state;
 				lag_pid=tmp->pid;
-				printk(KERN_DEBUG,"proces %i ma status %i",tlist->pid,tlist->state);
+				printk(KERN_DEBUG "proces %i ma status %i",tlist->pid,tlist->state);
 				return mlength;
 			}
 		} while ( (tlist = next_task(tlist)) != &init_task );
