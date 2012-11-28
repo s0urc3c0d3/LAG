@@ -8,6 +8,9 @@
 struct sched_job_lag lag_job = {
 	.REQ = 0,
 	.task = NULL,
+	.curr = NULL,
+	.tpid=0,
+	.cpid=0,
 };
 
 EXPORT_SYMBOL(lag_job);

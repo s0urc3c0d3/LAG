@@ -1751,11 +1751,13 @@ static struct task_struct *pick_next_task_lag(struct rq *rq)
 	}
 	if (lag->REQ==1){
 		lag->REQ=2;
-		printk(KERN_ALERT "new curr pid:%i ",lag->task->pid);
+		lag->tpid=lag->task->pid;
+		//printk(KERN_ALERT "new curr pid:%i ",lag->task->pid);
 		return lag->task;
 	}
 	lag->REQ=0;
-	printk(KERN_ALERT "new curr pid:%i ",lag->curr->pid);
+	//printk(KERN_ALERT "new curr pid:%i ",lag->curr->pid);
+	lag->cpid=lag->task->pid;
 	return lag->curr;
 }	
 

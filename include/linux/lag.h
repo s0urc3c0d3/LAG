@@ -8,6 +8,8 @@ struct sched_job_lag {
 	int REQ;
 	struct task_struct *task;
 	struct task_struct *curr;
+	int tpid;
+	int cpid;
 };
 
 extern struct sched_job_lag lag_job;

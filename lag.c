@@ -163,10 +163,10 @@ ssize_t lag_write(struct file *target_file, const char __user *buf, size_t mleng
 				fs->task=tlist;
 				fs->curr=current;
 				schedule();
-				printk(KERN_ALERT "pid: %i",current->pid);
-				schedule();
-				printk(KERN_ALERT "pid: %i",current->pid);
+				printk(KERN_DEBUG "pid: %i  %i  %i  ",current->pid,fs->tpid,fs->cpid);
 				BUG();
+				schedule();
+				printk(KERN_DEBUG "pid: %i  %i  %i  ",current->pid,fs->tpid,fs->cpid);
 	//			wait_event(lag_wq, block==1);
 				//fs->REQ=0;
 				//schedule();
