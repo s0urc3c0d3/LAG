@@ -1745,20 +1745,13 @@ static void moved_group_fair(struct task_struct *p)
 
 static struct task_struct *pick_next_task_lag(struct rq *rq)
 {
-	struct sched_job_lag *lag=&lag_job;
-	if (lag->REQ==0) {
-		return pick_next_task_fair(rq);
+	struct sched_job_lag *lag = &lag_job;
+	struct task_struct *tsk=pick_next_task_fair(rq);
+	lag_wait_queue *wq = &lag_wait;
+	if (lag->REQ==1) {
+		if (wq->tsk->pid==tsk->pid) return pick_next_task_lag(rq);
 	}
-	if (lag->REQ==1){
-		lag->REQ=2;
-		lag->tpid=lag->task->pid;
-		//printk(KERN_ALERT "new curr pid:%i ",lag->task->pid);
-		return lag->task;
-	}
-	lag->REQ=0;
-	//printk(KERN_ALERT "new curr pid:%i ",lag->curr->pid);
-	lag->cpid=lag->task->pid;
-	return lag->curr;
+	return tsk;
 }	
 
 /*
