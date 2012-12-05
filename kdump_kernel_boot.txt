@@ -1,0 +1,2 @@
+crashkernel=128M
+nmi_watchdog=1
