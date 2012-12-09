@@ -6,6 +6,7 @@
 #include "lag.h"
 #include <asm/system.h>
 #include <asm/bug.h>
+#include <asm/cacheflush.h>
 #include <linux/lag.h>
 //#include <../kernel/sched.c>
 
@@ -68,6 +69,7 @@ struct class *cl;
 void *c_dev;
 
 struct sched_job_lag *fs=&lag_job;
+lag_wait_queue *wq = &lag_wait;
 
 DECLARE_WAIT_QUEUE_HEAD(lag_wq);
 
@@ -93,6 +95,7 @@ struct task_struct * pick_next_task_lag(struct rq *rq)
 
 int init_module()
 {
+	set_memory_rw(0xc050fd54,1);
 	lagmayor = register_chrdev(250,lagdev, &lagops);
 	if (lagmayor > -1 ) printk (KERN_DEBUG "lag device created %d",lagmayor);
 		else printk(KERN_DEBUG "lag device error");
@@ -159,14 +162,11 @@ ssize_t lag_write(struct file *target_file, const char __user *buf, size_t mleng
 			if (tlist->pid == tmp->pid) {
 				printk(KERN_DEBUG "pid: %i",tlist->pid);
 				printk(KERN_DEBUG "pid: %i",current->pid);
-				fs->REQ=1;
 				fs->task=tlist;
+				wq->tsk=tlist;
 				fs->curr=current;
-				schedule();
-				printk(KERN_DEBUG "pid: %i  %i  %i  ",current->pid,fs->tpid,fs->cpid);
-				BUG();
-				schedule();
-				printk(KERN_DEBUG "pid: %i  %i  %i  ",current->pid,fs->tpid,fs->cpid);
+				fs->REQ=1;
+	//			schedule();
 	//			wait_event(lag_wq, block==1);
 				//fs->REQ=0;
 				//schedule();

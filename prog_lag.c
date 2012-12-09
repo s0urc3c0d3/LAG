@@ -9,7 +9,7 @@ int main(int argc, char *argv[])
 	int lag_file = open("/dev/lag",O_RDWR);
 	struct lag_request req,res;
 	req.REQID=1;
-	req.pid=1626;
+	req.pid=1900;
 	req.status=0;
 	write(lag_file,&req,sizeof(struct lag_request));
 	close(lag_file);

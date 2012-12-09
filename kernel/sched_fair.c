@@ -1745,13 +1745,26 @@ static void moved_group_fair(struct task_struct *p)
 
 static struct task_struct *pick_next_task_lag(struct rq *rq)
 {
+	asm("#1");
 	struct sched_job_lag *lag = &lag_job;
+	asm("#2");
 	struct task_struct *tsk=pick_next_task_fair(rq);
+	asm("#3");
 	lag_wait_queue *wq = &lag_wait;
+	asm("#4");
 	if (lag->REQ==1) {
-		if (wq->tsk->pid==tsk->pid) return pick_next_task_lag(rq);
+	asm("#5");
+		if (wq->tsk->pid==tsk->pid) 
+	asm("#a");
+		{
+			set_tsk_need_resched(tsk);
+	asm("#b");
+			return pick_next_task_fair(rq);
+		}
 	}
+	asm("#c");
 	return tsk;
+	asm("#d");
 }	
 
 /*
