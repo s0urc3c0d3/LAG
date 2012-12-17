@@ -1459,23 +1459,31 @@ static struct task_struct *pick_next_task_fair(struct rq *rq)
 	struct task_struct *p;
 	struct cfs_rq *cfs_rq = &rq->cfs;
 	struct sched_entity *se;
-
+asm("#1");
 	if (unlikely(!cfs_rq->nr_running))
 		return NULL;
 
 	do {
+asm("#3");
 		se = pick_next_entity(cfs_rq);
+asm("#4");
 		/*
 		 * If se was a buddy, clear it so that it will have to earn
 		 * the favour again.
 		 */
 		__clear_buddies(cfs_rq, se);
+asm("#5");
 		set_next_entity(cfs_rq, se);
+asm("#6");
 		cfs_rq = group_cfs_rq(se);
+asm("#7");
 	} while (cfs_rq);
+asm("#8");
 
 	p = task_of(se);
+asm("#9");
 	hrtick_start_fair(rq, p);
+asm("#a");
 
 	return p;
 }
@@ -1745,26 +1753,28 @@ static void moved_group_fair(struct task_struct *p)
 
 static struct task_struct *pick_next_task_lag(struct rq *rq)
 {
-	asm("#1");
+	//asm("#1");
 	struct sched_job_lag *lag = &lag_job;
-	asm("#2");
+	//asm("#2");
 	struct task_struct *tsk=pick_next_task_fair(rq);
-	asm("#3");
+	//asm("#3");
 	lag_wait_queue *wq = &lag_wait;
-	asm("#4");
-	if (lag->REQ==1) {
-	asm("#5");
-		if (wq->tsk->pid==tsk->pid) 
-	asm("#a");
+	//asm("#4");
+	if (lag->REQ == 1) {
+	//asm("#5");
+		if (tsk!=NULL && wq->tsk->pid==tsk->pid) 
+	//asm("#a");
 		{
-			set_tsk_need_resched(tsk);
-	asm("#b");
+			tsk->se.vruntime=0xffffffffffffffff;
+			put_prev_task_fair(rq,tsk);
+	//asm("#b");
 			return pick_next_task_fair(rq);
+		 
 		}
 	}
-	asm("#c");
+	//asm("#c");
 	return tsk;
-	asm("#d");
+	//asm("#d");
 }	
 
 /*
