@@ -1765,11 +1765,13 @@ static struct task_struct *pick_next_task_lag(struct rq *rq)
 		if (tsk!=NULL && wq->tsk->pid==tsk->pid) 
 	//asm("#a");
 		{
-			tsk->se.vruntime=0xffffffffffffffff;
+			tsk->se.vruntime=0x000000000fffffff;
 			put_prev_task_fair(rq,tsk);
+			printk(KERN_DEBUG "obecny tsk %i %llu  ",tsk->pid,(unsigned long long)tsk->se.vruntime);
 	//asm("#b");
-			return pick_next_task_fair(rq);
-		 
+			tsk = pick_next_task_fair(rq);
+			printk(KERN_DEBUG "nowy tsk %i %llu  ",tsk->pid,(unsigned long long)tsk->se.vruntime);
+		 	return tsk;
 		}
 	}
 	//asm("#c");
