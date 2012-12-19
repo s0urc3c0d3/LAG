@@ -1765,9 +1765,9 @@ static struct task_struct *pick_next_task_lag(struct rq *rq)
 		if (tsk!=NULL && wq->tsk->pid==tsk->pid) 
 	//asm("#a");
 		{
-			struct cfs_rq cfs_rq=rq->cfs;
-			struct sched_entity se=tsk->se;
-			if (cfs_rq.rb_leftmost == &se.run_node)
+			struct sched_entity *se=&tsk->se;
+			struct cfs_rq *cfs_rq=cfs_rq_of(se);
+			if (cfs_rq->rb_leftmost == &se->run_node)
 				printk("rowne!  ");
 			put_prev_task_fair(rq,tsk);
 	//asm("#b");
