@@ -1765,13 +1765,13 @@ static struct task_struct *pick_next_task_lag(struct rq *rq)
 		if (tsk!=NULL && wq->tsk->pid==tsk->pid) 
 	//asm("#a");
 		{
-			tsk->se.exec_start=0;
-			printk(KERN_DEBUG "obecny przez zmiana tsk %i %llu  ",tsk->pid,(unsigned long long)tsk->se.vruntime);
+			struct cfs_rq cfs_rq=rq->cfs;
+			struct sched_entity se=tsk->se;
+			if (cfs_rq.rb_leftmost == &se.run_node)
+				printk("rowne!  ");
 			put_prev_task_fair(rq,tsk);
-			printk(KERN_DEBUG "obecny tsk %i %llu  ",tsk->pid,(unsigned long long)tsk->se.vruntime);
 	//asm("#b");
 			tsk = pick_next_task_fair(rq);
-			printk(KERN_DEBUG "nowy tsk %i %llu  ",tsk->pid,(unsigned long long)tsk->se.vruntime);
 		 	return tsk;
 		}
 	}
