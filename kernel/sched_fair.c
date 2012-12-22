@@ -22,6 +22,7 @@
 
 //#include <linux/lag.h>
 #include <linux/latencytop.h>
+static void deactivate_task(struct rq *rq, struct task_struct *p, int sleep);
 
 /*
  * Targeted preemption latency for CPU-bound tasks:
@@ -1771,6 +1772,7 @@ static struct task_struct *pick_next_task_lag(struct rq *rq)
 				printk("rowne!  ");
 			put_prev_task_fair(rq,tsk);
 	//asm("#b");
+			deactivate_task(rq, tsk, 1);
 			tsk = pick_next_task_fair(rq);
 		 	return tsk;
 		}
