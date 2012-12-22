@@ -166,20 +166,20 @@ ssize_t lag_write(struct file *target_file, const char __user *buf, size_t mleng
 				wq->tsk=tlist;
 				fs->curr=current;
 				fs->REQ=1;
-	//			schedule();
-	//			wait_event(lag_wq, block==1);
+	//			//schedule();
+	//			//wait_event(lag_wq, block==1);
 				//fs->REQ=0;
 				//schedule();
-				state = tlist->state;
-				lag_pid=tmp->pid;
-				printk(KERN_DEBUG "proces %i ma status %i",tlist->pid,tlist->state);
+				//state = tlist->state;
+				//lag_pid=tmp->pid;
+				//printk(KERN_DEBUG "proces %i ma status %i",tlist->pid,tlist->state);
 				return mlength;
 			}
 		} while ( (tlist = next_task(tlist)) != &init_task );
 	}
 	if (tmp->REQID==2)
 	{
-		block=0;
+		fs->REQ=0;
 	}
 	return mlength;
 }
