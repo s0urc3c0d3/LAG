@@ -8,8 +8,8 @@ int main(int argc, char *argv[])
 {
 	int lag_file = open("/dev/lag",O_RDWR);
 	struct lag_request req,res;
-	req.REQID=2;
-	req.pid=1980;
+	req.REQID=1;
+	req.pid=1772;
 	req.status=0;
 	write(lag_file,&req,sizeof(struct lag_request));
 	close(lag_file);

@@ -8,6 +8,7 @@
 #include <asm/bug.h>
 #include <asm/cacheflush.h>
 #include <linux/lag.h>
+
 //#include <../kernel/sched.c>
 
 /*#define wait_event_target(wq, condition, target)                        \
@@ -162,9 +163,7 @@ ssize_t lag_write(struct file *target_file, const char __user *buf, size_t mleng
 			if (tlist->pid == tmp->pid) {
 				printk(KERN_DEBUG "pid: %i",tlist->pid);
 				printk(KERN_DEBUG "pid: %i",current->pid);
-				fs->task=tlist;
 				wq->tsk=tlist;
-				fs->curr=current;
 				fs->REQ=1;
 	//			//schedule();
 	//			//wait_event(lag_wq, block==1);
@@ -179,7 +178,7 @@ ssize_t lag_write(struct file *target_file, const char __user *buf, size_t mleng
 	}
 	if (tmp->REQID==2)
 	{
-		fs->REQ=0;
+		fs->REQ=2;
 	}
 	return mlength;
 }

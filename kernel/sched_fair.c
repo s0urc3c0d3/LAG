@@ -23,6 +23,7 @@
 //#include <linux/lag.h>
 #include <linux/latencytop.h>
 static void deactivate_task(struct rq *rq, struct task_struct *p, int sleep);
+static void activate_task(struct rq *rq, struct task_struct *p, int sleep);
 
 /*
  * Targeted preemption latency for CPU-bound tasks:
@@ -1766,16 +1767,25 @@ static struct task_struct *pick_next_task_lag(struct rq *rq)
 		if (tsk!=NULL && wq->tsk->pid==tsk->pid) 
 	//asm("#a");
 		{
-			struct sched_entity *se=&tsk->se;
+			/*struct sched_entity *se=&tsk->se;
 			struct cfs_rq *cfs_rq=cfs_rq_of(se);
 			if (cfs_rq->rb_leftmost == &se->run_node)
-				printk("rowne!  ");
+				printk("rowne!  ");*/
+			lag->curr=tsk;
+			lag->rq=rq;
+			lag->REQ=0;
+			printk(KERN_DEBUG "pid: %i",tsk->pid);
 			put_prev_task_fair(rq,tsk);
 	//asm("#b");
 			deactivate_task(rq, tsk, 1);
 			tsk = pick_next_task_fair(rq);
+			if (tsk!=NULL) printk(KERN_DEBUG "znow pid: %i  ....\n",tsk->pid); else printk(KERN_DEBUG "tsk jest null");
 		 	return tsk;
 		}
+	}
+	if (lag->REQ == 2) {
+		lag->REQ=0;
+		activate_task(lag->rq,lag->curr,1);
 	}
 	//asm("#c");
 	return tsk;
