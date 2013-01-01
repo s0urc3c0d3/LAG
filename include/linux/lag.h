@@ -3,22 +3,22 @@
 
 #include <linux/sched.h>
 
-
 struct __lag_wait_queue {
 	struct task_struct *tsk;
+	struct rq *rq;
 	struct __lag_wait_queue *next;
 	struct __lag_wait_queue *prev;
 
 };
-struct sched_job_lag {
-	int REQ;
-	struct task_struct *task;
-	struct task_struct *curr;
-	int tpid;
-	int cpid;
-};
 
 typedef struct __lag_wait_queue lag_wait_queue;
+
+struct sched_job_lag {
+	int REQ;
+	lag_wait_queue *wait_queue;
+	int pid;
+};
+
 extern lag_wait_queue lag_wait;
 
 extern struct sched_job_lag lag_job;
@@ -30,7 +30,9 @@ extern struct sched_job_lag lag_job;
  * acts as it should and i did not want to waste time on bugs
  * because I use standard list */
 
-extern void lag_wait_queue_add(lag_wait_queue *list, lag_wait_queue *ent);
+extern void lag_wait_queue_add(lag_wait_queue *ent, lag_wait_queue *list); 
 
 // delete process from list
 extern void lag_wait_queue_del(lag_wait_queue *ent);
+
+extern void lag_debug_wait_queue(lag_wait_queue *ent);

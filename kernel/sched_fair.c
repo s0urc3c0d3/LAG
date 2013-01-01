@@ -1760,32 +1760,58 @@ static struct task_struct *pick_next_task_lag(struct rq *rq)
 	//asm("#2");
 	struct task_struct *tsk=pick_next_task_fair(rq);
 	//asm("#3");
-	lag_wait_queue *wq = &lag_wait;
 	//asm("#4");
 	if (lag->REQ == 1) {
 	//asm("#5");
-		if (tsk!=NULL && wq->tsk->pid==tsk->pid) 
+		if (tsk!=NULL && lag->pid==tsk->pid) 
 	//asm("#a");
 		{
-			/*struct sched_entity *se=&tsk->se;
-			struct cfs_rq *cfs_rq=cfs_rq_of(se);
-			if (cfs_rq->rb_leftmost == &se->run_node)
-				printk("rowne!  ");*/
-			lag->curr=tsk;
-			lag->rq=rq;
+			struct __lag_wait_queue *wq = (struct __lag_wait_queue *) kzalloc(sizeof(struct __lag_wait_queue),GFP_KERNEL);
+			wq->tsk=tsk;
+			wq->rq=rq;
 			lag->REQ=0;
+			if (lag->wait_queue) 
+				lag_wait_queue_add(wq,lag->wait_queue); 
+			else 
+			{
+				wq->next=wq;
+				wq->prev=wq;
+				lag->wait_queue=wq;
+			}
+			lag_debug_wait_queue(lag->wait_queue);
+			printk (KERN_DEBUG "w kolejce mam pid: %i \n",lag->wait_queue->tsk->pid);
+			if (lag->wait_queue->next ==NULL) printk (KERN_DEBUG "next jest null   \n");
+			if (lag->wait_queue->prev ==NULL) printk (KERN_DEBUG "prev jest null   \n");
 			printk(KERN_DEBUG "pid: %i",tsk->pid);
 			put_prev_task_fair(rq,tsk);
 	//asm("#b");
 			deactivate_task(rq, tsk, 1);
 			tsk = pick_next_task_fair(rq);
-			if (tsk!=NULL) printk(KERN_DEBUG "znow pid: %i  ....\n",tsk->pid); else printk(KERN_DEBUG "tsk jest null");
 		 	return tsk;
 		}
 	}
 	if (lag->REQ == 2) {
 		lag->REQ=0;
-		activate_task(lag->rq,lag->curr,1);
+		lag_wait_queue *tmp=lag->wait_queue;
+		while (tmp !=NULL && tmp->tsk->pid != lag->pid ) 
+		{
+			if (tmp!=NULL)
+			{
+				printk(KERN_DEBUG " ....... pid: %i .....",tmp->tsk->pid);
+			}
+			tmp=tmp->next;
+			if (tmp == lag->wait_queue) break;
+		}
+		if (tmp==NULL) 
+			printk(KERN_DEBUG "Blad!");
+		else
+			lag->wait_queue=tmp->next;
+			lag_wait_queue_del(tmp);
+			activate_task(rq,tmp->tsk,1);
+			if (lag->wait_queue == tmp) printk(KERN_DEBUG "\n niestety kolejka jest pusta\n");
+			if (lag->wait_queue->prev == NULL || lag->wait_queue->next == NULL) lag->wait_queue = NULL;
+			lag_debug_wait_queue(lag->wait_queue);
+			kfree(tmp);
 	}
 	//asm("#c");
 	return tsk;
