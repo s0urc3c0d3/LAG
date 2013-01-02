@@ -8,8 +8,9 @@ int main(int argc, char *argv[])
 {
 	int lag_file = open("/dev/lag",O_RDWR);
 	struct lag_request req,res;
-	req.REQID=2;
-	req.pid=1920;
+	if (argc < 3) printf("za malo argumentow!\n");
+	req.REQID=argv[2];
+	req.pid=argv[1];
 	req.status=0;
 	write(lag_file,&req,sizeof(struct lag_request));
 	close(lag_file);
