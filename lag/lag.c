@@ -23,7 +23,7 @@ EXPORT_SYMBOL(lag_job);
 
 void lag_wait_queue_add(lag_wait_queue *ent, lag_wait_queue *list)
 {
-	lag_wait_queue *list_next = list->prev;
+	lag_wait_queue *list_next = list->next;
 	list_next->prev = ent;
 	ent->next=list_next;
 	ent->prev=list;
