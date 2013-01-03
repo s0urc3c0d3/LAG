@@ -1807,7 +1807,7 @@ static struct task_struct *pick_next_task_lag(struct rq *rq)
 		else
 			lag->wait_queue=tmp->next;
 			lag_wait_queue_del(tmp);
-			activate_task(rq,tmp->tsk,1);
+			activate_task(tmp->rq,tmp->tsk,1);
 			if (lag->wait_queue == tmp) printk(KERN_DEBUG "\n niestety kolejka jest pusta\n");
 			if (lag->wait_queue->prev == NULL || lag->wait_queue->next == NULL) lag->wait_queue = NULL;
 			lag_debug_wait_queue(lag->wait_queue);
