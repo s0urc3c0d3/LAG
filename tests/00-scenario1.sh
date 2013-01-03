@@ -18,7 +18,7 @@ for i in `ps ax | grep test_prog | tail -n $NPROC | awk '{print $1}'`; do PROCS=
 
 echo $PROCS > $WORKDIR/procs.txt
 LICZNIK=0
-for i in `cat tests/00-scenario1.txt | awk '{ if (NR!=1) { print $0}i}'`;
+for i in `cat tests/00-scenario1.txt | awk '{ if (NR!=1) { print $0}}'`;
 do
 	LICZNIK=$(($LICZNIK+1))
 	PROC=$(echo $i | awk 'BEGIN {FS="."} { print $1}')
