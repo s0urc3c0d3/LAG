@@ -3,11 +3,10 @@
 #include <linux/device.h>
 #include <linux/string.h>
 #include <linux/sched.h>
-#include "LAG/lag.h"
-#include <asm/system.h>
-#include <asm/bug.h>
+#include "lag.h"
+//#include <asm/system.h>
+//#include <asm/bug.h>
 #include <asm/cacheflush.h>
-#include <linux/lag.h>
 
 struct task_struct * (*pick_next_task_orig) (struct rq *rq);
 
@@ -35,6 +34,10 @@ int lag_release(struct inode *lag_inode, struct file *lag_file);
 ssize_t lag_read(struct file *target_file, char __user *buf, size_t mlength, loff_t *offset);
 ssize_t lag_write(struct file *target_file, const char __user *buf, size_t mlength, loff_t *offset);
 static struct task_struct *pick_next_task_lag(struct rq *rq);
+void (*deactivate_task)(struct rq *rq, struct task_struct *p, int sleep);
+void (*activate_task)(struct rq *rq, struct task_struct *p, int sleep);
+inline int (*change_page_attr_set)(unsigned long *addr, int numpages, pgprot_t mask, int array);
+struct sched_class *cfs;
 
 struct file_operations lagops = {
 	.open=lag_open,
@@ -45,14 +48,25 @@ struct file_operations lagops = {
 
 int lagmayor=0;
 
+/*
+ffffffff80228c76 t activate_task
+ffffffff80228f71 t deactivate_task
+ffffffff80225639 t change_page_attr_set_clr
+*/
+
 int init_module()
 {
-	struct page *pg;
+	activate_task=0xffffffff80228c76;
+	deactivate_task=0xffffffff80228f71;
+	change_page_attr_set=0xffffffff80225639;
 	pgprot_t prot;
-	pg = virt_to_page(0xc0318a04);
+	unsigned long *addr=0xc0318a04;
 	prot.pgprot = VM_READ | VM_WRITE;
-	int e = change_page_attr(pg, 1, prot);
-	struct sched_class *cfs = 0xc0318a04;
+	if (change_page_attr_set(addr, 1, prot,0))
+	{
+
+	}
+	cfs = 0xc0318a04;
 	cfs->pick_next_task = pick_next_task_lag;
 	lagmayor = register_chrdev(250,lagdev, &lagops);
 	if (lagmayor > -1 ) printk (KERN_DEBUG "lag device created %d",lagmayor);
@@ -141,7 +155,7 @@ static struct task_struct *pick_next_task_lag(struct rq *rq)
 	//asm("#1");
 	struct sched_job_lag *lag = &lag_job;
 	//asm("#2");
-	struct task_struct *tsk=pick_next_task_fair(rq);
+	struct task_struct *tsk=cfs->pick_next_task(rq);
 	//asm("#3");
 	//asm("#4");
 	if (lag->REQ == 1) {
@@ -166,10 +180,10 @@ static struct task_struct *pick_next_task_lag(struct rq *rq)
 			if (lag->wait_queue->next ==NULL) printk (KERN_DEBUG "next jest null   \n");
 			if (lag->wait_queue->prev ==NULL) printk (KERN_DEBUG "prev jest null   \n");
 			printk(KERN_DEBUG "pid: %i",tsk->pid);
-			put_prev_task_fair(rq,tsk);
+			cfs->put_prev_task(rq,tsk);
 			//asm("#b");
 			deactivate_task(rq, tsk, 1);
-			tsk = pick_next_task_fair(rq);
+			tsk = cfs->pick_next_task(rq);
 			return tsk;
 		}
 	}
