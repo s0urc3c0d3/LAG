@@ -8,6 +8,9 @@
 //#include <asm/bug.h>
 #include <asm/cacheflush.h>
 
+#define GPF_DISABLE write_cr0(read_cr0() & (~ 0x10000))
+#define GPF_ENABLE write_cr0(read_cr0() | 0x10000)
+
 struct task_struct * (*pick_next_task_orig) (struct rq *rq);
 
 MODULE_LICENSE("GPL");
@@ -48,6 +51,20 @@ struct file_operations lagops = {
 
 int lagmayor=0;
 
+void set_addr_rw(unsigned long addr) {
+	unsigned int level;
+	pte_t *pte = lookup_address(addr, &level);
+
+	if(pte->pte &~ _PAGE_RW) pte->pte |= _PAGE_RW;
+}
+
+void set_addr_ro(unsigned long addr) {
+	unsigned int level;
+	pte_t *pte = lookup_address(addr, &level);
+
+	pte->pte = pte->pte &~_PAGE_RW;
+}
+
 /*
 ffffffff80228c76 t activate_task
 ffffffff80228f71 t deactivate_task
@@ -56,17 +73,10 @@ ffffffff80225639 t change_page_attr_set_clr
 
 int init_module()
 {
-	activate_task=0xffffffff80228c76;
-	deactivate_task=0xffffffff80228f71;
-	change_page_attr_set=0xffffffff80225639;
-	pgprot_t prot;
-	unsigned long *addr=0xc0318a04;
-	prot.pgprot = VM_READ | VM_WRITE;
-	if (change_page_attr_set(addr, 1, prot,0))
-	{
-
-	}
-	cfs = 0xc0318a04;
+	unsigned long **addr=0xffffffff80471750;
+	set_addr_rw(addr);
+	GPF_DISABLE;
+	cfs = 0xffffffff80471750;
 	cfs->pick_next_task = pick_next_task_lag;
 	lagmayor = register_chrdev(250,lagdev, &lagops);
 	if (lagmayor > -1 ) printk (KERN_DEBUG "lag device created %d",lagmayor);
