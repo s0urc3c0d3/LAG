@@ -36,10 +36,10 @@ int lag_open(struct inode *lag_inode, struct file *lag_file);
 int lag_release(struct inode *lag_inode, struct file *lag_file);
 ssize_t lag_read(struct file *target_file, char __user *buf, size_t mlength, loff_t *offset);
 ssize_t lag_write(struct file *target_file, const char __user *buf, size_t mlength, loff_t *offset);
-static struct task_struct *pick_next_task_lag(struct rq *rq);
+static struct task_struct* pick_next_task_lag(struct rq *rq);
+static struct task_struct* (*pick_next_task_fair)(struct rq *rq);
 void (*deactivate_task)(struct rq *rq, struct task_struct *p, int sleep);
 void (*activate_task)(struct rq *rq, struct task_struct *p, int sleep);
-inline int (*change_page_attr_set)(unsigned long *addr, int numpages, pgprot_t mask, int array);
 struct sched_class *cfs;
 
 struct file_operations lagops = {
@@ -51,20 +51,22 @@ struct file_operations lagops = {
 
 int lagmayor=0;
 
-void set_addr_rw(unsigned long addr) {
-	unsigned int level;
-	pte_t *pte = lookup_address(addr, &level);
-
-	if(pte->pte &~ _PAGE_RW) pte->pte |= _PAGE_RW;
+int make_rw(unsigned long long address)
+{  
+   unsigned int level;
+   pte_t *pte = lookup_address(address,&level);
+   if(pte->pte &~ _PAGE_RW)
+      pte->pte |= _PAGE_RW;
+   return 0;
 }
-
-void set_addr_ro(unsigned long addr) {
-	unsigned int level;
-	pte_t *pte = lookup_address(addr, &level);
-
-	pte->pte = pte->pte &~_PAGE_RW;
+ 
+int make_ro(unsigned long address)
+{
+   unsigned int level;
+   pte_t *pte = lookup_address(address, &level);
+   pte->pte = pte->pte &~ _PAGE_RW;
+   return 0;
 }
-
 /*
 ffffffff80228c76 t activate_task
 ffffffff80228f71 t deactivate_task
@@ -73,10 +75,10 @@ ffffffff80225639 t change_page_attr_set_clr
 
 int init_module()
 {
-	unsigned long **addr=0xffffffff80471750;
-	set_addr_rw(addr);
-	GPF_DISABLE;
-	cfs = 0xffffffff80471750;
+	make_rw(0xc0317a0c);
+	//make_rw(0x80471750);
+	cfs = (void *)0xc0317a0c;
+	pick_next_task_fair = cfs->pick_next_task;
 	cfs->pick_next_task = pick_next_task_lag;
 	lagmayor = register_chrdev(250,lagdev, &lagops);
 	if (lagmayor > -1 ) printk (KERN_DEBUG "lag device created %d",lagmayor);
@@ -165,7 +167,7 @@ static struct task_struct *pick_next_task_lag(struct rq *rq)
 	//asm("#1");
 	struct sched_job_lag *lag = &lag_job;
 	//asm("#2");
-	struct task_struct *tsk=cfs->pick_next_task(rq);
+	struct task_struct *tsk=pick_next_task_fair(rq);
 	//asm("#3");
 	//asm("#4");
 	if (lag->REQ == 1) {
@@ -193,7 +195,7 @@ static struct task_struct *pick_next_task_lag(struct rq *rq)
 			cfs->put_prev_task(rq,tsk);
 			//asm("#b");
 			deactivate_task(rq, tsk, 1);
-			tsk = cfs->pick_next_task(rq);
+			tsk = pick_next_task_fair(rq);
 			return tsk;
 		}
 	}
