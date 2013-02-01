@@ -3,11 +3,10 @@
 #include <linux/device.h>
 #include <linux/string.h>
 #include <linux/sched.h>
-#include "lag.h"
 #include <asm/system.h>
 #include <asm/bug.h>
 #include <asm/cacheflush.h>
-#include <linux/lag.h>
+#include "lag.h"
 
 struct task_struct * (*pick_next_task_orig) (struct rq *rq);
 
@@ -28,12 +27,12 @@ void *c_dev;
 struct sched_job_lag *fs=&lag_job;
 lag_wait_queue *wq = &lag_wait;
 
-DECLARE_WAIT_QUEUE_HEAD(lag_wq);
-
 int lag_open(struct inode *lag_inode, struct file *lag_file);
 int lag_release(struct inode *lag_inode, struct file *lag_file);
 ssize_t lag_read(struct file *target_file, char __user *buf, size_t mlength, loff_t *offset);
 ssize_t lag_write(struct file *target_file, const char __user *buf, size_t mlength, loff_t *offset);
+
+lag_task_struct lag_ts;
 
 struct file_operations lagops = {
 	.open=lag_open,
@@ -44,37 +43,29 @@ struct file_operations lagops = {
 
 int lagmayor=0;
 
-struct task_struct * pick_next_task_lag(struct rq *rq)
-{
-	printk(KERN_DEBUG "print LAG");
-	return pick_next_task_orig(rq);
-}
-
 int init_module()
 {
-	set_memory_rw(0xc050fd54,1);
 	lagmayor = register_chrdev(250,lagdev, &lagops);
 	if (lagmayor > -1 ) printk (KERN_DEBUG "lag device created %d",lagmayor);
 		else printk(KERN_DEBUG "lag device error");
 	cl = class_create(THIS_MODULE, "lag");
-	if (IS_ERR(cl))
+	if (cl==NULL)
 	{
-		
+		printk(KERN_DEBUG "\n class error");	
 	}
 	c_dev = device_create(cl, NULL, MKDEV(250,1), NULL, "lag");
-	if (IS_ERR(c_dev))
+	if (c_dev==NULL)
 	{
-
+		printk(KERN_DEBUG "\n c_dev error");	
 	}
-	init_waitqueue_head(&lag_wq);
 	return 0;
 }
 
 void cleanup_module()
 {
-	//device_destroy(c_dev,MKDEV(251,1));
-	//class_destroy(cl);
-	unregister_chrdev(lagmayor, lagdev);
+	device_destroy(cl,MKDEV(250,1));
+	class_destroy(cl);
+	unregister_chrdev(250 , lagdev);
 }
 
 // FILE_OPERATIONS
@@ -124,6 +115,16 @@ ssize_t lag_write(struct file *target_file, const char __user *buf, size_t mleng
 	{
 		fs->REQ=2;
 		fs->pid=tmp->pid;
+	}
+	if (tmp->REQID==3) //get task_struct members. Not all but most of them. Olne thesse what have constant size
+	{
+		struct task_struct *tlist = &init_task;
+		do {
+			if (tlist->pid == tmp->pid) {
+				copy_task_struct_to_lag_task_struct(tlist,lag_ts);
+				break;
+			}
+		} while ( (tlist = next_task(tlist)) != &init_task );
 	}
 	return mlength;
 }
