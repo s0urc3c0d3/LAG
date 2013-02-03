@@ -119,6 +119,28 @@ struct __lag_task_struct = {
 	unsigned long prev_utime, prev_stime;
 	unsigned long nvcsw, nivcsw;
 	
+	//2 ponizsze struktury powinny same sie utowrzyc przy wywolaniu execve
+	//struct timespec start_time;
+	//struct timespec real_start_time;
+
+	unsigned long min_flt, maj_flt;
+
+	//cputimes_expires oraz cpu_timers powiny zostac wygenerowanie przy execve a cputime_expires tworzy chyba planista
+
+	//struktury cres tworzone sa przy mechanizmie COW wiec mozna je pominac. oto pola: real_cred, cread, cread_exec_mutex
+
+	char comm[TASK_COMM_LEN]; //TASK_COMM_LEN pochodzi z include/linux/sched.h
+
+	/* dane systemu plikow */
+	int link_count, total_link_count;
+
+	//struct sysv_sem sysvsem; //zalezne od CONFIG_SYSVIPC poniewaz odnosi sie do listy semaforow dzielonych miedzy grupa zadan pomijam to bo nie przenosze wszystkiego tylko to jedn ozadanie.
+
+	unsigned long last_switch_timestamp; // zalezy od CONFIG_DETECT_SOFTLOCKUP
+	unsigned long last_switch_count; //zalezy od CONFIG_DETECT_SOFTLOCKUP
+
+	//teraz bedzoe struktura odpowiedzialna za stan CPU procesu (tylko wazniejsze rejestry bez np. rejestrow ogolnego przeznaczenia
+	
 	
 };
 
