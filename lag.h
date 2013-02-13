@@ -141,7 +141,13 @@ struct __lag_task_struct = {
 
 	//teraz bedzoe struktura odpowiedzialna za stan CPU procesu (tylko wazniejsze rejestry bez np. rejestrow ogolnego przeznaczenia
 	
-	
+	struct thread_struct thread; //ta struktura ma 3 wskazniki niestety trzeba je przepisac ito sa nastepne 3 pola. Nie mam pojecia czy sie przydadza
+	struct vm86_struct __user vm86_info;
+	unsigned long io_bitmap_ptr
+	//struct ds_context ds_ctx; //to pole sprobujemy wziasc z execve
+
+	//strucct fs_struct; //tego nie przepisuje bo ustali sie przy execve ale ostatecznie mozna kopiowac, trzeba tylko strukture path obczaic	
+
 };
 
 typedef struct __lag_task_struct lag_task_struct;
