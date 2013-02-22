@@ -1,0 +1,10 @@
+LAG - Linux Agents library. This project is implementation of processes with ability to migrate between hosts. There are two levels of migration:
+-weak as in todays active-pasive cluster
+-strong as in active-active clusters and this is what LAG is providing. This project uses checkpoint/reset project (http://ckpt.wiki.kernel.org). with some additional changes. All the changes are pointed in this file. Details can be found in doc. The patch file can be found in doc/patch.
+
+This project is licenced on Lesser General Public License version 2 (LGPL-2). Please look in main directory for copy of LGPL-2 license in file LICENSE. Checkpoint/reset is released on GPL-2. The copy of this license can be found in LICENSE file aswell.
+
+You can read licenses online at:
+
+
+
