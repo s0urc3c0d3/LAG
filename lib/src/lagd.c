@@ -49,13 +49,17 @@ void agent_del(agent_t *ent)
 int regAgent(char *AID)
 {
 	agent_t *tmp = (agent_t *) malloc(sizeof(agent_t));
-	if (tmp = NULL) return 1;
+	if (tmp == NULL) return 1;
 	tmp->AID = (char *)malloc(strlen(AID));
-	if (tmp->AID = NULL) return 1;
+	if (tmp->AID == NULL) return 1;
 	memcpy(tmp->AID,AID,strlen(AID));
 
 	if (agent_list == NULL)
+	{
 		agent_list = tmp;
+		agent_list->next=agent_list;
+		agent_list->prev=agent_list;
+	}
 	else
 		agent_add(tmp, agent_list);
 	return 0;
@@ -84,7 +88,7 @@ int parseCommand(char *b, int n)
 	//dreg - bez argumentow. Kazdy agent dostaje swoj watek.
 	//mige - jako argument powinien byc IP
 	//migs - poniewaz mige ustawia zmienne migracji nie musi podawac parametru. W LDAP status agenta zmieniany jest na "migrating". Funkcje biblioteki blokuja sie cyklicznie sprawdzajac czy status zmienil sie na "running". Dopiero wtedy probuja nawiazac polaczenie pobierajac dane agenta
-	if (strncpy(b,"alis",4)==0) return 10;
+	if (strncmp(b,"alis",4)==0) return 10;
 }	
 
 void listAgents(int s)
@@ -96,7 +100,8 @@ void listAgents(int s)
 	do
 	{
 		memset(&buffer,0,256);
-		memcpy(&buffer,y->AID,strlen(y->AID));
+		n=strlen(y->AID);
+		memcpy(&buffer,y->AID,n);
 		n = send(s,buffer,n,0);
 		y=y->next;
 	}
@@ -105,20 +110,23 @@ void listAgents(int s)
 
 void *agentThread(void *socket)
 {
-	int n,sock = (int) socket, command;
+	int n,sock = (int) socket, command, err;
 	char buffer[256];
-	memset(&buffer,0,256);
 	do
 	{
+		memset(&buffer,0,256);
 		n = recv(sock,buffer,255,0);
 		if (n > 0)
 		{
+			err=-1;
 			command = parseCommand(buffer,n);
 			switch (command)
 			{
-				case 1: regAgent(ARG1);break;
+				case 1: err = regAgent(ARG1);break;
 				case 10: listAgents(sock);break;
 			}
+			if (err == 0)  send(sock,"ok",2,0);
+			if (err > 0)  send(sock,"no",2,0);
 		}
 	}
 	while (strncmp(buffer,"exit",4)!=0 && working == 0);
