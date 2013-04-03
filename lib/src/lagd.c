@@ -19,7 +19,7 @@ char *ARG1 = NULL, *ARG2 = NULL, *ARG3 = NULL;
 struct __agent_t {
 	char *name;
 	char *IP;
-	char *port;
+	int port;
 	char *AID;
 	struct __agent_t *next;
 	struct __agent_t *prev;
@@ -46,13 +46,33 @@ void agent_del(agent_t *ent)
         ent->prev=NULL;
 }
 
-int regAgent(char *AID)
+int isRegAgent(char *AID, int port)
 {
+	if (!agent_list) return 0;
+	int n;
+	agent_t *y=agent_list;
+	do
+	{
+		n=strlen(y->AID);
+		if (strncmp(y->AID,AID,n) == 0 || y->port == port) return 1;
+		y=y->next;
+	}
+	while (y!=agent_list);
+	return 0;
+}
+
+int regAgent(char *AID, int port)
+{
+	if (isRegAgent(AID,port) == 1) return 1;
 	agent_t *tmp = (agent_t *) malloc(sizeof(agent_t));
-	if (tmp == NULL) return 1;
-	tmp->AID = (char *)malloc(strlen(AID));
-	if (tmp->AID == NULL) return 1;
+	if (!tmp) return 1;
+	tmp->AID = (char *)malloc(strlen(AID)+1);
+	if (!tmp->AID) return 1;
+	memset(tmp->AID,0,sizeof(strlen(AID)+1));
 	memcpy(tmp->AID,AID,strlen(AID));
+
+	if (port == 0 ) return 1;
+		tmp->port = port;
 
 	if (agent_list == NULL)
 	{
@@ -73,11 +93,23 @@ int parseCommand(char *b, int n)
 	if (strncmp(b,"dreg",4)==0) return 0; //wyrejestruj agenta. Agenci dostaja ID od lagd. Podobnie user moze odpytac sie lagd o obecne agenty. 
 	if (strncmp(b,"rega",4)==0) //az chcialo sie dodac jeszcze jedna literke i stworzyc nowy regał...
 	{
-		if (ARG1 != NULL)
+		if (ARG1)
 			free(ARG1);
-		ARG1 = (char *)malloc(n-5);
-		memset(ARG1,0,n-5);
-		memcpy(ARG1,b+5,n-7);
+		if (ARG2)
+			free(ARG2);
+		char *tmp = (char *)malloc(n-5);
+		memset(tmp,0,n-5);
+		memcpy(tmp,b+5,n-7);
+		char *tmp2 = strchr(tmp,32);
+		int c = tmp2-tmp+1;
+		ARG1 = (char *)malloc(c);
+		memset(ARG1,0,c);
+		memcpy(ARG1,tmp,c-1);
+		c = n-strlen(tmp)+strlen(tmp2)-5-1;
+		ARG2 = (char *) malloc(c);
+		memset(ARG2,0,c);
+		memcpy(ARG2,tmp2+1,c);
+		
 		return 1;
 	}
 	if (strncmp(b,"mige",4)==0) return 2; //od migrate entry - pierwszy etap migracji. Gdzie lagd sprawdza czy docelowy host jest zdolny do migracji. W tym czasie agent nie musi jeszcze sie szykowac. Odpowiedz "yes" lub "no"
@@ -110,7 +142,7 @@ void listAgents(int s)
 
 void *agentThread(void *socket)
 {
-	int n,sock = (int) socket, command, err;
+	int n,sock = (int) socket, command, err, isRegistered=0;
 	char buffer[256];
 	do
 	{
@@ -122,7 +154,13 @@ void *agentThread(void *socket)
 			command = parseCommand(buffer,n);
 			switch (command)
 			{
-				case 1: err = regAgent(ARG1);break;
+				case 1: if (isRegistered == 0) err = regAgent(ARG1,atoi(ARG2));
+						else {
+							err=1;
+							break;
+						}
+					if (err == 0) isRegistered=1;
+					break;
 				case 10: listAgents(sock);break;
 			}
 			if (err == 0)  send(sock,"ok",2,0);
