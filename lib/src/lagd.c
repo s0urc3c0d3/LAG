@@ -85,6 +85,25 @@ int regAgent(char *AID, int port)
 	return 0;
 }
 
+int deregAgent(char *AID)
+{
+	if (agent_list == NULL) return 1;
+	agent_t *y=agent_list;
+	do
+	{
+		if (strncmp(y->AID,AID,strlen(AID)) == 0) {
+			agent_del(y);
+			free(y->AID);
+			free(y->IP);
+			free(y);
+			return 0;
+		}
+		y=y->next;
+	}
+	while (y!=agent_list);
+	return 1;
+}
+
 int parseCommand(char *b, int n)
 {
 	// niektorzy moga uznac te funkcje za bezuzyteczna ale tak szczerze? Wole nie bawic sie w switch na lancuchac w C
@@ -144,6 +163,7 @@ void *agentThread(void *socket)
 {
 	int n,sock = (int) socket, command, err, isRegistered=0;
 	char buffer[256];
+	char *AID;
 	do
 	{
 		memset(&buffer,0,256);
@@ -154,12 +174,20 @@ void *agentThread(void *socket)
 			command = parseCommand(buffer,n);
 			switch (command)
 			{
+				case 0: if (isRegistered == 1) err = deregAgent(AID);
+					if (err == 0) memcpy(buffer,"exit",4); 
+					break;
 				case 1: if (isRegistered == 0) err = regAgent(ARG1,atoi(ARG2));
 						else {
 							err=1;
 							break;
 						}
-					if (err == 0) isRegistered=1;
+						if (err == 0) {
+							isRegistered=1;
+							AID=malloc(strlen(ARG1)+1);
+							memset(AID,0,strlen(ARG1)+1);
+							memcpy(AID,ARG1,strlen(ARG1));	
+						}
 					break;
 				case 10: listAgents(sock);break;
 			}
