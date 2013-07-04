@@ -3,7 +3,7 @@
 #include <linux/device.h>
 #include <linux/string.h>
 #include <linux/sched.h>
-#include <asm/system.h>
+//#include <asm/system.h>
 #include <asm/bug.h>
 #include <asm/cacheflush.h>
 #include "lag.h"
@@ -32,7 +32,7 @@ int lag_release(struct inode *lag_inode, struct file *lag_file);
 ssize_t lag_read(struct file *target_file, char __user *buf, size_t mlength, loff_t *offset);
 ssize_t lag_write(struct file *target_file, const char __user *buf, size_t mlength, loff_t *offset);
 
-lag_task_struct lag_ts;
+//lag_task_struct lag_ts;
 
 struct file_operations lagops = {
 	.open=lag_open,
@@ -121,7 +121,7 @@ ssize_t lag_write(struct file *target_file, const char __user *buf, size_t mleng
 		struct task_struct *tlist = &init_task;
 		do {
 			if (tlist->pid == tmp->pid) {
-				copy_task_struct_to_lag_task_struct(tlist,lag_ts);
+				//copy_task_struct_to_lag_task_struct(tlist,lag_ts);
 				break;
 			}
 		} while ( (tlist = next_task(tlist)) != &init_task );

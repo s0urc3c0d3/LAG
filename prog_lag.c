@@ -11,6 +11,8 @@ int main(int argc, char *argv[])
 	if (argc < 3) printf("za malo argumentow!\n");
 	req.REQID=atoi(argv[2]);
 	req.pid=atoi(argv[1]);
+	req.REQID=1;
+	req.pid=1922;
 	printf("%i %i\n",req.pid,req.REQID);
 	req.status=0;
 	write(lag_file,&req,sizeof(struct lag_request));

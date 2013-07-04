@@ -63,7 +63,7 @@ extern void lag_wait_queue_add(lag_wait_queue *ent, lag_wait_queue *list);
 extern void lag_wait_queue_del(lag_wait_queue *ent);
 
 extern void lag_debug_wait_queue(lag_wait_queue *ent);
-
+/*
 struct __lag_task_struct = {
 	long state;
 	atomic_t usage;
@@ -79,7 +79,7 @@ struct __lag_task_struct = {
 
 	unsigned char fpu_counter;
 	s8 oomkilladj; /* OOM kill score adjustment (bit shift). */
-	unsigned int btrace_seq; //to pole zalezy od  CONFIG_BLK_DEV_IO_TRACE
+/*	unsigned int btrace_seq; //to pole zalezy od  CONFIG_BLK_DEV_IO_TRACE
 	unsigned int policy;
 	cpumask_t cpus_allowed;
 
@@ -96,7 +96,7 @@ struct __lag_task_struct = {
 	int exit_code, exit_signal;
 	int pdeath_signal;  /*  The signal sent when the parent dies  */
 	
-	unsigned int personality;
+/*	unsigned int personality;
 	unsigned did_exec:1;
 	pid_t pid; //PIDy kopiujemy poniewaz moze uda sie uzyc starych
 	pid_t tgid;
@@ -132,7 +132,7 @@ struct __lag_task_struct = {
 	char comm[TASK_COMM_LEN]; //TASK_COMM_LEN pochodzi z include/linux/sched.h
 
 	/* dane systemu plikow */
-	int link_count, total_link_count;
+/*	int link_count, total_link_count;
 
 	//struct sysv_sem sysvsem; //zalezne od CONFIG_SYSVIPC poniewaz odnosi sie do listy semaforow dzielonych miedzy grupa zadan pomijam to bo nie przenosze wszystkiego tylko to jedn ozadanie.
 
@@ -151,3 +151,5 @@ struct __lag_task_struct = {
 };
 
 typedef struct __lag_task_struct lag_task_struct;
+
+*/
