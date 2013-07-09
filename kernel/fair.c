@@ -5553,7 +5553,7 @@ static struct task_struct *pick_next_task_lag(struct rq *rq)
                         */
 			put_prev_task_fair(rq,tsk);
         //asm("#b");
-                        deactivate_task(rq, tsk, 1);
+                        //deactivate_task(rq, tsk, 1);
                         //dequeue_task_fair(rq, tsk, 0);
                         //wake_up_state(tsk, TASK_INTERRUPTIBLE);
                         tsk = pick_next_task_fair(rq);
