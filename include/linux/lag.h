@@ -17,6 +17,8 @@ struct sched_job_lag {
 	int REQ;
 	lag_wait_queue *wait_queue;
 	int pid;
+	struct rq *rq;
+	struct task_struct *tsk;
 };
 
 extern lag_wait_queue lag_wait;
