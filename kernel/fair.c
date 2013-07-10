@@ -5530,11 +5530,10 @@ static struct task_struct *pick_next_task_lag(struct rq *rq)
                 if (tsk!=NULL && lag->pid==tsk->pid)
         //asm("#a");
                 {
-                        struct __lag_wait_queue *wq = (struct __lag_wait_queue *
-) kzalloc(sizeof(struct __lag_wait_queue),GFP_KERNEL);
+                        //struct __lag_wait_queue *wq = (struct __lag_wait_queue *) kzalloc(sizeof(struct __lag_wait_queue),GFP_KERNEL);
 			printk (KERN_DEBUG "debug");
 			
-			lag->REQ=0;
+			//lag->REQ=0;
                         /*wq->tsk=tsk;
                         wq->rq=rq;
                         if (lag->wait_queue)
@@ -5551,11 +5550,15 @@ static struct task_struct *pick_next_task_lag(struct rq *rq)
                         if (lag->wait_queue->prev ==NULL) printk (KERN_DEBUG "prev jest null   \n");
                         printk(KERN_DEBUG "pid: %i",tsk->pid);
                         */
+			printk (KERN_DEBUG "old pid: %i\n",tsk->pid);
+			//BUG();
 			put_prev_task_fair(rq,tsk);
         //asm("#b");
-                        //deactivate_task(rq, tsk, 1);
+                        deactivate_task(rq, tsk, 1);
                         //dequeue_task_fair(rq, tsk, 0);
                         //wake_up_state(tsk, TASK_INTERRUPTIBLE);
+			//BUG();
+			printk (KERN_DEBUG "new pid: %i\n",tsk->pid);
                         tsk = pick_next_task_fair(rq);
                         return tsk;
                 }
