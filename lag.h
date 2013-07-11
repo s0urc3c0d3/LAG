@@ -44,6 +44,8 @@ struct sched_job_lag {
 	int REQ;
 	lag_wait_queue *wait_queue;
 	int pid;
+	struct __lag_wait_queue *tmp;
+	int isFreezing;
 };
 
 extern lag_wait_queue lag_wait;

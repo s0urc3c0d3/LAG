@@ -17,6 +17,10 @@ struct sched_job_lag lag_job = {
 	.REQ = 0,
 	.wait_queue = NULL,
 	.pid = 0,
+//	.rq = NULL,
+//	.tsk = NULL,
+	.tmp = NULL,
+	.isFreezing = 0,
 };
 
 EXPORT_SYMBOL(lag_job);

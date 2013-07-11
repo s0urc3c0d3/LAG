@@ -6,6 +6,7 @@
 //#include <asm/system.h>
 #include <asm/bug.h>
 #include <asm/cacheflush.h>
+#include <linux/slab.h>
 #include "lag.h"
 
 struct task_struct * (*pick_next_task_orig) (struct rq *rq);
@@ -25,12 +26,15 @@ struct class *cl;
 void *c_dev;
 
 struct sched_job_lag *fs=&lag_job;
-lag_wait_queue *wq = &lag_wait;
+//lag_wait_queue *wq = &lag_wait;
 
 int lag_open(struct inode *lag_inode, struct file *lag_file);
 int lag_release(struct inode *lag_inode, struct file *lag_file);
 ssize_t lag_read(struct file *target_file, char __user *buf, size_t mlength, loff_t *offset);
 ssize_t lag_write(struct file *target_file, const char __user *buf, size_t mlength, loff_t *offset);
+
+void (*activate_task)(struct rq *rq, struct task_struct *p, int flags);
+void (*deactivate_task)(struct rq *rq, struct task_struct *p, int flags);
 
 //lag_task_struct lag_ts;
 
@@ -58,6 +62,9 @@ int init_module()
 	{
 		printk(KERN_DEBUG "\n c_dev error");	
 	}
+	fs->isFreezing=1;
+	deactivate_task=0xc0144764; 
+	activate_task=0xc0144eb4;
 	return 0;
 }
 
@@ -92,39 +99,44 @@ ssize_t lag_write(struct file *target_file, const char __user *buf, size_t mleng
 	tmp = (struct lag_request *) buf;
 	if (tmp->REQID==0)
 	{
-		struct task_struct *tlist = &init_task;
-		do {
-			if (tlist->pid == tmp->pid) {
-				//state = tlist->state;
-				//lag_pid=tmp->pid;
-			}
-		} while ( (tlist = next_task(tlist)) != &init_task );
+		fs->isFreezing=0;
+		fs->tmp=fs->wait_queue;
+		do
+		{
+			activate_task(fs->tmp->rq,fs->tmp->tsk,1);
+			fs->tmp=fs->tmp->next;
+		} while(fs->tmp != fs->wait_queue);
 	}
 	if (tmp->REQID==1)
+	{	
+		fs->isFreezing=1;
+		fs->tmp=fs->wait_queue;
+		do
+		{
+			deactivate_task(fs->tmp->rq,fs->tmp->tsk,1);
+			fs->tmp=fs->tmp->next;
+		} while(fs->tmp != fs->wait_queue);
+	}
+	if (tmp->REQID==2)
 	{
 		struct task_struct *tlist = &init_task;
 		do {
 			if (tlist->pid == tmp->pid) {
 				fs->pid=tlist->pid;
 				fs->REQ=1;
+				fs->tmp=kzalloc(sizeof(lag_wait_queue),GFP_KERNEL);
 				return mlength;
 			}
 		} while ( (tlist = next_task(tlist)) != &init_task );
 	}
-	if (tmp->REQID==2)
+	if (tmp->REQID==3)
 	{
 		fs->REQ=2;
 		fs->pid=tmp->pid;
 	}
-	if (tmp->REQID==3) //get task_struct members. Not all but most of them. Olne thesse what have constant size
+	if (tmp->REQID==4) //zwroc liste procesow w kolejce
 	{
-		struct task_struct *tlist = &init_task;
-		do {
-			if (tlist->pid == tmp->pid) {
-				//copy_task_struct_to_lag_task_struct(tlist,lag_ts);
-				break;
-			}
-		} while ( (tlist = next_task(tlist)) != &init_task );
+		
 	}
 	return mlength;
 }

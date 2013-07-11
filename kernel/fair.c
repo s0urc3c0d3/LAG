@@ -5526,42 +5526,36 @@ static struct task_struct *pick_next_task_lag(struct rq *rq)
                 {
                         //lag_wait_queue *wq;
 			lag->REQ=0;
-			//wq = kzalloc(sizeof(lag_wait_queue), GFP_KERNEL);
 			printk (KERN_DEBUG "debug");
 			
-                        lag->tsk=tsk;
-                        lag->rq=rq;
-                        /*if (lag->wait_queue)
-                                lag_wait_queue_add(wq,lag->wait_queue);
+                        lag->tmp->tsk=tsk;
+                        lag->tmp->rq=rq;
+                        if (lag->wait_queue)
+                                lag_wait_queue_add(lag->tmp,lag->wait_queue);
                         else
                         {
-                                wq->next=wq;
-                                wq->prev=wq;
-                                lag->wait_queue=wq;
+                                lag->tmp->next=lag->tmp;
+                                lag->tmp->prev=lag->tmp;
+                                lag->wait_queue=lag->tmp;
                         }
                         lag_debug_wait_queue(lag->wait_queue);
                         printk (KERN_DEBUG "w kolejce mam pid: %i \n",lag->wait_queue->tsk->pid);
                         if (lag->wait_queue->next ==NULL) printk (KERN_DEBUG "next jest null   \n");
                         if (lag->wait_queue->prev ==NULL) printk (KERN_DEBUG "prev jest null   \n");
-                        */
-			printk(KERN_DEBUG "pid: %i",tsk->pid);
                         
-			printk (KERN_DEBUG "old pid: %i\n",tsk->pid);
-			//BUG();
 			put_prev_task_fair(rq,tsk);
         //asm("#b");
-                        deactivate_task(rq, tsk, 1);
-                        //dequeue_task_fair(rq, tsk, 0);
-                        //wake_up_state(tsk, TASK_INTERRUPTIBLE);
-			//BUG();
-			printk (KERN_DEBUG "new pid: %i\n",tsk->pid);
-                        tsk = pick_next_task_fair(rq);
+			if (lag->isFreezing == 1)
+                        {
+				deactivate_task(rq, tsk, 1);
+                        	tsk = pick_next_task_fair(rq);
+			}
                         return tsk;
                 }
         }
         if (lag->REQ == 2) {
                 lag->REQ=0;
-                /*lag_wait_queue *tmp=lag->wait_queue;
+                lag_wait_queue *tmp=lag->wait_queue;
                 while (tmp !=NULL && tmp->tsk->pid != lag->pid )
                 {
                         if (tmp!=NULL)
@@ -5576,13 +5570,16 @@ static struct task_struct *pick_next_task_lag(struct rq *rq)
                 else
                         lag->wait_queue=tmp->next;
                         lag_wait_queue_del(tmp);
-                        */
-			activate_task(lag->rq,lag->tsk,1);
-                        /*
+                       
+			if (lag->isFreezing == 1)
+			{
+				activate_task(tmp->rq,tmp->tsk,1);
+			}
+                        
 			if (lag->wait_queue == tmp) printk(KERN_DEBUG "\n niestety kolejka jest pusta\n");
                         if (lag->wait_queue->prev == NULL || lag->wait_queue->next == NULL) lag->wait_queue = NULL;
                         lag_debug_wait_queue(lag->wait_queue);
-                        kfree(tmp);*/
+                        kfree(tmp);
         }
         //asm("#c");
         return tsk;
