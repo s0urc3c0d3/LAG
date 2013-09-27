@@ -9,8 +9,59 @@
 #include <pthread.h>
 #include <fcntl.h>
 #include <syslog.h>
+#include <signal.h>
 
-#define PORT = 4567;
+#include <getopt.h>
+#include <stdarg.h>
+#include <sys/types.h>
+#include <sys/syscall.h>
+
+#define __NR_checkpoint		304
+#define CHECKPOINT_SUBTREE 	0x1
+#define PORT 		= 	4567;
+
+/*
+ *  checkpoint.c: checkpoint one or multiple processes
+ *
+ *  Copyright (C) 2008-2009 Oren Laadan
+ *
+ *  This file is subject to the terms and conditions of the GNU General Public
+ *  License.  See the file COPYING in the main directory of the Linux
+ *  distribution for more details.
+ */
+
+#include <linux/checkpoint.h>
+
+#include "../include/checkpoint.h"
+#include "../include/common.h"
+
+static int global_uerrfd = -1;
+
+inline static int checkpoint(pid_t pid, int fd, unsigned long flags, int logfd)
+{
+	return syscall(__NR_checkpoint, pid, fd, flags, logfd);
+}
+
+int cr_checkpoint(int pid, struct cr_checkpoint_args *args)
+{
+	int ret;
+
+	global_uerrfd = args->uerrfd;
+
+	if (!args->container)
+		args->flags |= CHECKPOINT_SUBTREE;
+
+	ret = checkpoint(pid, args->outfd, args->flags, args->logfd);
+
+	if (ret < 0) {
+		ckpt_perror("checkpoint");
+		ckpt_err("(you may use 'ckptinfo -e' for more info)\n"); 
+	} else if (args->verbose) {
+		ckpt_err("checkpoint id %d\n", ret);
+	}
+
+	return ret;
+}
 
 int working=0;
 
@@ -248,3 +299,4 @@ int main(int argc, char *argv[])
 	closelog();
 	pthread_exit(NULL);
 }
+

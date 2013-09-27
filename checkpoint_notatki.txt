@@ -1,0 +1,90 @@
+main wola cr_checkpoint z PID i adresem args typu cr_checkpoint_args
+
+ustalanie cr_checkpoint_args:
+outfs -> dostaje fd STDOUT
+logfd -> makro CHECKPOINT_FD_NONE, jezeli --logfile podano to logfd dostaje jego deskryptor (tworzony jest plik)
+uerrfd -> dostaje STDERR
+
+cr_checkpoint
+sprawdza czy args->container zawiera wartosc. Jezeli tak to args->flags dostaje dodatkowa flage CHECKPOINT_SUBTREE
+
+wolany jest sys_checkpoint, ktory wola do_sys_checkpoint z parametrami: pid, args->outfd, args->flags, args->logfd
+
+do_sys_checkpoint
+
+tworzony sobie wskaznik struktury ckpt_ctx o nazwie ctx
+
+jezeli flags nie zawiera CHECKPOINT_USER_FLAGS zwraca blad
+jezeli uprawnienia nie sa na poziome CAP_SYS_ADMIN zwraca blad
+jezeli pid==0 to pobiera pid taska current (current to makro - juz jestesmy w kernelu)
+ctx jest allokowane uzywajac fd (dawne outfd) flags (dawne flags) CKPT_CTX_CHECKPOINT oraz logfd (dawne logfd). Ta alokacja MUSI sie udac inaczej ctx jest NULL i zwracamy blad.
+
+wolany jest do_checkpoint z ctx i wartoscia pid. Jezeli ta funkcja zwroci blad kod bledu zawiera ctx->crid.
+Wolana jest funkcja ckpt_ctx_put na ctx - czyzby zwalniala pamiec zajmowana przez ctx?
+
+cpkt_ctx_alloc( fd, flags -> uflags, CKPT_CTX_CHECKPOINT -> kflags, logfd)
+tworzy strukture ckpt_ctx ctx i wypelnia ja zerami
+ctx->uflags=uflsgs;
+ctx->kflags=kflags;
+ctx->ktime_begin = ktime_get();
+atimic_sec ustawia &ctx->refcount na 0
+inicjacja list_head (makra INIT_LIST_HEAD) w ctx->pgarr_list oraz ctx->pgarr_pool
+inicjacja waitqueue (makra init_waitqueue_head) na ctx->waitq oraz ctx->ghostq
+init_completion (???) na ctx->complete oraz ctx->errno_sync
+jezeli zdefiniowano CONFIG_CHECKPOINT_DEBUG to dodatkowo INIT_LIST_HEAD na ctx->task_status oraz wolamy spin_lock_init na ctx->lock
+
+wolamy mutex_init na ctx->msg_mutex
+
+INIT_LIST_HEAD na ctx->listen_sockets
+ctx->file fostaje wynik fget(fd) (???)
+
+ctx->file nie moze byc NULL bo inaczej blad
+jezeli ctx->logfile == NULL blad. Moze byc natomiast CHECKPOINT_FS_NONE. Inaczej jego wartosc ustala fget(logfd)
+tworzenie deferqueue na ctx->deferqueue oraz ctx->files_deferq
+ctx->scratch_page dostaje przerzutowany na void* wynik __get_free_page(GFP_KERNEL) (????)
+atomic_inc zwieksza ctx->refcount
+ckpt_ctx_alloc zwraca adres ctx
+
+DO_CHECKPOINT( *ctx, pid)
+wolany jest init_checkpoint_ctx(ctx,pid), wynik dostaje long ret
+jezeli ctx->root_freezer to wolana jest fukncje cgroup_freezer_begin_checkpoint (nie interesujacy przypadek bo nei widzialem abyu gdzie to bylo ustawiane)
+build_tree(ctx) a wynik do ret
+jezeli ctx->uflags zawiera CHECKPOINT_SUBTREE to wolane sa: connect_object(ctx) a wynik leci do ret; 
+jezeli ret >=0 to sprawdzamy czy ckpt_obj_contained zwraca true. Inaczej blad (w obu ifach)
+teraz wolane sa kolejno: checkpoint_write_header, checkpoint_container, checkpoint_pids, checkpoint_tree, checkpoint_all_tasks z parametrem ctx. Wyniki leca do ret i po kazdej funkcji sprawdzamy czy ret < 0. Jezeli ret <0 to mamy blad
+wolamy deferqueue_run na ctx->deferqueue
+jezeli ckpt_obj_visited(ctx) zwraca false
+wywolaj checkpoint_write_tail(ctx)
+UWAGA w przypadku bledu ctx->crid dostaje wynik atomic_inc_return(&ctx_count)
+
+INIT_CHECKPOINT_CTX(ctx,pid)
+uzywamy task typu task_struct*, nsproxy typu nsproxy*, fs typu fs_struct*
+rcu_read_lock i rcu_read_unlock a pomiedzy tymi funkcjami task dostaje wynik find_task_by_vpid(pid). Jezeli task nie jest NULL to wolamy get_task_struct(task).
+Jezeli teraz task to NULL to zwracamy blad. Inaczej ctx->root_task = task
+Znow rcu_read_lock i rcu_read_unlock ale teraz nsproxy kolejno: nsproxy = task_nsproxy(task). Jezeli nsproxy nie jest NULL to get_nsproxy(nsproxy)
+jezeli nsproxy NULL to return blad inaczej ctx->nsproxy = nsproxy
+ctx->root_freezer dostaje get_freezer(task)
+ctx->root_init dostaje is_container_init(task);
+jezeli nie (ctx->uflags zawiera CHECKPOINT_SUBTREE i ctx->root_init jest NULL) -> blad
+task_lock(cts->root_task);
+fs = ctx->root_task->fs;
+spin_lock(&fs->lock);
+ctx->root_fs_path = fs->root;
+path_get(&ctx->root_fs_path);
+spin_unlock(&fs->lock);
+task_unlock(ctx->root_task);
+
+BUILD_TREE(ctx)
+int n,m
+
+n = tree_count_tasks(ctx) // ciekawe jak on to liczy
+// z komentarzy wynika, ze jezeli cts->tasks_arr jest NULL to tylko policzy ich ilosc, jezeli nie jest null to ja wypelni
+ctx->nr_tasks = n
+ctx->tasks_arr = kzalloc(n * sizeof(*ctx->tasks_arr), GFP_KERNEL)
+
+m = tree_count_tasks(ctx) //tym razem dodatkowo wypelni tablice
+jezeli m<0 lub (m>0 i m!=n) <- blad
+
+TREE_COUNT_TASKS(ctx)
+
+
