@@ -86,5 +86,18 @@ m = tree_count_tasks(ctx) //tym razem dodatkowo wypelni tablice
 jezeli m<0 lub (m>0 i m!=n) <- blad
 
 TREE_COUNT_TASKS(ctx)
+przeglad zadan wedlug tasks_arr (zaczynajac od cts->tsk). sprawdzana jest funkcja may_checkpoint(ctx, task). Ta funkcja chyba sprawdza czy zadanie jest zamrozone.
+
+CHECKPOINT_WRITE_HEADER(struct ckpt_ctx *ctx)
+nadglowek ma typ ckpt_hdr_header i jest pobrany przez ckpt_hdr_get_type(ctx, sizeof(*h), CKPT_HDR_HEADER). struktura h jest potem uzupelniana kilkoma stalymi. Ciekawy moze buc zapis fill_kernel_const(&h->constants). sam zapis uzywa cpkt_write_obj i ckpt_hdr_put. Byc moze ciekawa moze okaze sie jeszcze funckja checkpoit_write_header_arch
+
+CHECKPOINT_CONTAINET(ckpt_ctx *ctx)
+Ciekawe bo znow pojawia sie nadglowek ale tym razem kontenerka? Zwrot kodu funkcji to wynik security_checkpoint_header(ctx).
+
+CHECKPOINT_PIDS(struct ckpt_ctx *ctx)
+tworzona jest tablica wypelniana czyms? tableta pids_arr typu flex_array. Jest tez nadglowek typu ckpt_hdr_pids. Uzupelnianie robi funkcja checkpoint_pids_build teorie te opieram na tym, ze funkcja ta zwraca jakies liczby do nr_pids i nr_vpids typu int. Jest jeszcze checkpoint_pids_dump, ktora dokonuje faktycznego zapisu do ctx?
+
+CHECKPOINT_TREE(struct ckpt_ctx *ctx)
 
 
+CHECKPOINT_ALL_TASKS
