@@ -1,6 +1,7 @@
 #include <linux/module.h>
 #include <linux/fs.h>
 #include <linux/device.h>
+#include <linux/cdev.h>
 #include <linux/string.h>
 #include <linux/sched.h>
 #include "lag.h"
@@ -12,7 +13,7 @@
 //#define GPF_DISABLE write_cr0(read_cr0() & (~ 0x10000))
 //#define GPF_ENABLE write_cr0(read_cr0() | 0x10000)
 
-struct task_struct * (*pick_next_task_orig) (struct rq *rq);
+//struct task_struct * (*pick_next_task_orig) (struct rq *rq);
 
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Grzegorz Dwornicki");
@@ -25,13 +26,12 @@ const char *lagdev="/dev/lag";
 int module_used=0;
 int read=0;
 
-struct class *cl;
-void *c_dev;
+static dev_t first;
+static struct class *cl;
+static struct cdev c_dev;
 
 struct sched_job_lag *fs=&lag_job;
-lag_wait_queue *wq = &lag_wait;
-
-DECLARE_WAIT_QUEUE_HEAD(lag_wq);
+//lag_wait_queue *wq = &lag_wait;
 
 int lag_open(struct inode *lag_inode, struct file *lag_file);
 int lag_release(struct inode *lag_inode, struct file *lag_file);
@@ -75,18 +75,27 @@ struct sched_job_lag lag_job = {
 
 int make_rw(unsigned long long address)
 {  
+   int y;
+   y=0;
    unsigned int level;
+   y=0;
    pte_t *pte = lookup_address(address,&level);
+   y=0;
    if(pte->pte &~ _PAGE_RW)
       pte->pte |= _PAGE_RW;
+   y=0;
    return 0;
 }
 
-int make_ro(unsigned long address)
+int make_ro(unsigned long long address)
 {
+   int y;
    unsigned int level;
+   y=0;
    pte_t *pte = lookup_address(address, &level);
+   y=0;
    pte->pte = pte->pte &~ _PAGE_RW;
+   y=0;
    return 0;
 }
 /*
@@ -97,41 +106,51 @@ ffffffff80225639 t change_page_attr_set_clr
 
 int init_module()
 {
-	struct sched_job_lag *lag = &lag_job;
-	make_rw(0xffffffff81405410);
+	//struct sched_job_lag *lag = &lag_job;
+	make_rw(0xc03a98e4);
 	//make_rw(0x80471750);
-	cfs = (void *)0xffffffff81405410;
-	deactivate_task = (void *)0xffffffff81059a8e;
-	activate_task = (void *)0xffffffff81059a6a;
+	cfs = (void *)0xc03a98e4;
+	deactivate_task = (void *)0xc0144764;
+	activate_task = (void *)0xc0144eb4;
 	pick_next_task_fair = cfs->pick_next_task;
 	put_prev_task_fair = cfs->put_prev_task;
 	cfs->pick_next_task = pick_next_task_lag;
-	lag->tmp = kzalloc(sizeof(lag_wait_queue), GFP_KERNEL);
-	lagmayor = register_chrdev(250,lagdev, &lagops);
-	if (lagmayor > -1 ) printk (KERN_DEBUG "lag device created %d",lagmayor);
-		else printk(KERN_DEBUG "lag device error");
-	/*cl = class_create(THIS_MODULE, "lag");
-	if (IS_ERR(cl))
-	{
-		
+	if (alloc_chrdev_region(&first, 0, 1, "lag") < 0)
+	{	
+		printk(KERN_DEBUG "lag device error");
+		return -1;
 	}
-	c_dev = device_create(cl, NULL, MKDEV(250,1), NULL, "lag");
-	if (IS_ERR(c_dev))
+	KERN_DEBUG "lag device created";
+	if ((cl = class_create(THIS_MODULE, "lag")) == NULL)
 	{
-
-	}*/
-	init_waitqueue_head(&lag_wq);
+		unregister_chrdev_region(first, 1);
+		return -1;
+	}
+	if (device_create(cl, NULL, first, NULL, "lag") == NULL)
+	{
+		class_destroy(cl);
+		unregister_chrdev_region(first, 1);
+		return -1;
+	}
+	cdev_init(&c_dev, &lagops);
+	if (cdev_add(&c_dev, first, 1) == -1)
+	{
+		device_destroy(cl, first);
+		class_destroy(cl);
+		unregister_chrdev_region(first, 1);
+		return -1;
+	}
 	return 0;
 }
 
 void cleanup_module()
 {
-	//make_rw(0x80471750);
+	cdev_del(&c_dev);
+	device_destroy(cl, first);
+	class_destroy(cl);
 	cfs->pick_next_task = pick_next_task_fair;
-	make_ro(0xffffffff81405410);
-//device_destroy(c_dev,MKDEV(251,1));
-	//class_destroy(cl);
-	unregister_chrdev(lagmayor, lagdev);
+	make_ro(0xc03a98e4);
+	unregister_chrdev_region(first, 1);
 }
 
 // FILE_OPERATIONS
@@ -163,6 +182,7 @@ ssize_t lag_write(struct file *target_file, const char __user *buf, size_t mleng
 			if (tlist->pid == tmp->pid) {
 				fs->pid=tlist->pid;
 				fs->REQ=1;
+				fs->tmp = kzalloc(sizeof(lag_wait_queue), GFP_KERNEL);
 				return mlength;
 			}
 		} while ( (tlist = next_task(tlist)) != &init_task );
@@ -198,9 +218,13 @@ static struct task_struct *pick_next_task_lag(struct rq *rq)
                         lag->tmp->tsk=tsk;
                         lag->tmp->rq=rq;
                         if (lag->wait_queue)
-                                lag_wait_queue_add(lag->tmp,lag->wait_queue);
+			{
+				printk (KERN_DEBUG "w if_then");
+				lag_wait_queue_add(lag->tmp,lag->wait_queue);
+			}
                         else
                         {
+				printk (KERN_DEBUG "w else");
                                 lag->tmp->next=lag->tmp;
                                 lag->tmp->prev=lag->tmp;
                                 lag->wait_queue=lag->tmp;

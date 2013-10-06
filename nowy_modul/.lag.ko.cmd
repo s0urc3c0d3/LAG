@@ -1,1 +1,1 @@
-cmd_/root/LAG/nowy_modul2/lag.ko := ld -r -m elf_x86_64 -T /usr/src/linux-3.4.51/scripts/module-common.lds --build-id  -o /root/LAG/nowy_modul2/lag.ko /root/LAG/nowy_modul2/lag.o /root/LAG/nowy_modul2/lag.mod.o
+cmd_/root/LAG/nowy_modul/lag.ko := ld -r -m elf_i386 -T /usr/src/linux-3.4.51/scripts/module-common.lds --build-id  -o /root/LAG/nowy_modul/lag.ko /root/LAG/nowy_modul/lag.o /root/LAG/nowy_modul/lag.mod.o

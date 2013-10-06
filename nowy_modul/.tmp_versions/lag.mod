@@ -1,2 +1,2 @@
-/root/LAG/nowy_modul2/lag.ko
-/root/LAG/nowy_modul2/lag.o
+/root/LAG/nowy_modul/lag.ko
+/root/LAG/nowy_modul/lag.o
