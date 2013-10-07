@@ -30,7 +30,8 @@ static dev_t first;
 static struct class *cl;
 static struct cdev c_dev;
 
-struct sched_job_lag *fs=&lag_job;
+//struct sched_job_lag *fs=&lag_job;
+struct sched_job_lag *fs;
 //lag_wait_queue *wq = &lag_wait;
 
 int lag_open(struct inode *lag_inode, struct file *lag_file);
@@ -106,9 +107,8 @@ ffffffff80225639 t change_page_attr_set_clr
 
 int init_module()
 {
-	//struct sched_job_lag *lag = &lag_job;
+	fs = (struct sched_job *)kzalloc(sizeof(struct sched_job_lag), GFP_KERNEL);
 	make_rw(0xc03a98e4);
-	//make_rw(0x80471750);
 	cfs = (void *)0xc03a98e4;
 	deactivate_task = (void *)0xc0144764;
 	activate_task = (void *)0xc0144eb4;
@@ -151,6 +151,7 @@ void cleanup_module()
 	cfs->pick_next_task = pick_next_task_fair;
 	make_ro(0xc03a98e4);
 	unregister_chrdev_region(first, 1);
+	kfree(fs);
 }
 
 // FILE_OPERATIONS
@@ -206,75 +207,64 @@ ssize_t lag_read(struct file *target_file, char __user *buf, size_t mlength, lof
 
 static struct task_struct *pick_next_task_lag(struct rq *rq)
 {
-        struct sched_job_lag *lag = &lag_job;
         struct task_struct *tsk=pick_next_task_fair(rq);
-        if (lag->REQ == 1) {
-                if (tsk!=NULL && lag->pid==tsk->pid)
+        if (fs->REQ == 1) {
+                if (tsk!=NULL && fs->pid==tsk->pid)
                 {
-                        //lag_wait_queue *wq;
-			lag->REQ=0;
+			fs->REQ=0;
 			printk (KERN_DEBUG "debug");
 			
-                        lag->tmp->tsk=tsk;
-                        lag->tmp->rq=rq;
-                        if (lag->wait_queue)
+                        fs->tmp->tsk=tsk;
+                        fs->tmp->rq=rq;
+                        if (fs->wait_queue)
 			{
 				printk (KERN_DEBUG "w if_then");
-				lag_wait_queue_add(lag->tmp,lag->wait_queue);
+				lag_wait_queue_add(fs->tmp,fs->wait_queue);
 			}
                         else
                         {
 				printk (KERN_DEBUG "w else");
-                                lag->tmp->next=lag->tmp;
-                                lag->tmp->prev=lag->tmp;
-                                lag->wait_queue=lag->tmp;
+                                fs->tmp->next=fs->tmp;
+                                fs->tmp->prev=fs->tmp;
+                                fs->wait_queue=fs->tmp;
                         }
-                        lag_debug_wait_queue(lag->wait_queue);
-                        printk (KERN_DEBUG "w kolejce mam pid: %i \n",lag->wait_queue->tsk->pid);
-                        if (lag->wait_queue->next ==NULL) printk (KERN_DEBUG "next jest null   \n");
-                        if (lag->wait_queue->prev ==NULL) printk (KERN_DEBUG "prev jest null   \n");
+                        lag_debug_wait_queue(fs->wait_queue);
+                        printk (KERN_DEBUG "w kolejce mam pid: %i \n",fs->wait_queue->tsk->pid);
+                        if (fs->wait_queue->next ==NULL) printk (KERN_DEBUG "next jest null   \n");
+                        if (fs->wait_queue->prev ==NULL) printk (KERN_DEBUG "prev jest null   \n");
                         
 			put_prev_task_fair(rq,tsk);
-        //asm("#b");
-			//if (lag->isFreezing == 1)
-                        //{
-				deactivate_task(rq, tsk, 1);
-                        	tsk = pick_next_task_fair(rq);
-			//}
+			deactivate_task(rq, tsk, 1);
+                        tsk = pick_next_task_fair(rq);
                         return tsk;
                 }
         }
-        if (lag->REQ == 2) {
-                lag->REQ=0;
-                lag_wait_queue *tmp=lag->wait_queue;
-                while (tmp !=NULL && tmp->tsk->pid != lag->pid )
+        if (fs->REQ == 2) {
+                fs->REQ=0;
+                lag_wait_queue *tmp=fs->wait_queue;
+                while (tmp !=NULL && tmp->tsk->pid != fs->pid )
                 {
                         if (tmp!=NULL)
                         {
                                 printk(KERN_DEBUG " ....... pid: %i .....",tmp->tsk->pid);
                         }
                         tmp=tmp->next;
-                        if (tmp == lag->wait_queue) break;
+                        if (tmp == fs->wait_queue) break;
                 }
                 if (tmp==NULL)
                         printk(KERN_DEBUG "Blad!");
                 else
-                        lag->wait_queue=tmp->next;
+                        fs->wait_queue=tmp->next;
                         lag_wait_queue_del(tmp);
                        
-			//if (lag->isFreezing == 1)
-			//{
-				activate_task(tmp->rq,tmp->tsk,1);
-			//}
+			activate_task(tmp->rq,tmp->tsk,1);
                         
-			if (lag->wait_queue == tmp) printk(KERN_DEBUG "\n niestety kolejka jest pusta\n");
-                        if (lag->wait_queue->prev == NULL || lag->wait_queue->next == NULL) lag->wait_queue = NULL;
-                        lag_debug_wait_queue(lag->wait_queue);
+			if (fs->wait_queue == tmp) printk(KERN_DEBUG "\n niestety kolejka jest pusta\n");
+                        if (fs->wait_queue->prev == NULL || fs->wait_queue->next == NULL) fs->wait_queue = NULL;
+                        lag_debug_wait_queue(fs->wait_queue);
                         kfree(tmp);
         }
-        //asm("#c");
         return tsk;
-        //asm("#d");
 }
 
 
@@ -283,7 +273,6 @@ static struct task_struct *pick_next_task_lag(struct rq *rq)
 
 
 
-EXPORT_SYMBOL(lag_job);
 
 void lag_wait_queue_add(lag_wait_queue *ent, lag_wait_queue *list)
 {
@@ -304,33 +293,20 @@ void lag_wait_queue_del(lag_wait_queue *ent)
 
 void lag_debug_wait_queue(lag_wait_queue *ent)
 {
-//asm("#1");
         printk(KERN_DEBUG "DEBUG WAIT QUEUE START \n");
-//asm("#2");
         if (ent == NULL)
-//asm("#3");
         printk(KERN_DEBUG "kolejka pusta \n");
         else
         {
-//asm("#4");
                 int ent_pid=ent->tsk->pid;
-//asm("#5");
                 lag_wait_queue *tmp=ent;
-//asm("#6");
                 do {
-//asm("#7");
                         printk(KERN_DEBUG "entry pid %i \n",tmp->tsk->pid);
-//asm("#8");
                         if (tmp->next == NULL) printk(KERN_DEBUG "entry next is null! \n"); else printk(KERN_DEBUG "entry next pid %i \n",tmp->next->tsk->pid);
-//asm("#9");
                         if (tmp->prev == NULL) printk(KERN_DEBUG "entry prev is null! \n"); else printk(KERN_DEBUG "entry prev pid %i \n",tmp->prev->tsk->pid);
-//asm("#0");
                         tmp=tmp->next;
-//asm("#a");
                 }
                 while (tmp != NULL && tmp->tsk->pid != ent_pid);
-//asm("#c");
         }
-//asm("#d");
         printk(KERN_DEBUG "DEBUG WAIT QUEUE STOP \n");
 }

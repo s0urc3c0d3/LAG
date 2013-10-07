@@ -535,6 +535,7 @@ deps_/root/LAG/nowy_modul/lag.o := \
     $(wildcard include/config/intel/iommu.h) \
     $(wildcard include/config/amd/iommu.h) \
   include/linux/pm_wakeup.h \
+  include/linux/cdev.h \
   include/linux/sched.h \
     $(wildcard include/config/sched/debug.h) \
     $(wildcard include/config/no/hz.h) \
