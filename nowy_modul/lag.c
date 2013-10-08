@@ -6,14 +6,7 @@
 #include <linux/sched.h>
 #include "lag.h"
 #include <linux/slab.h>
-//#include <asm/system.h>
-//#include <asm/bug.h>
 #include <asm/cacheflush.h>
-
-//#define GPF_DISABLE write_cr0(read_cr0() & (~ 0x10000))
-//#define GPF_ENABLE write_cr0(read_cr0() | 0x10000)
-
-//struct task_struct * (*pick_next_task_orig) (struct rq *rq);
 
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Grzegorz Dwornicki");
@@ -30,9 +23,7 @@ static dev_t first;
 static struct class *cl;
 static struct cdev c_dev;
 
-//struct sched_job_lag *fs=&lag_job;
 struct sched_job_lag *fs;
-//lag_wait_queue *wq = &lag_wait;
 
 int lag_open(struct inode *lag_inode, struct file *lag_file);
 int lag_release(struct inode *lag_inode, struct file *lag_file);
@@ -66,10 +57,7 @@ struct sched_job_lag lag_job = {
         .REQ = 0,
         .wait_queue = NULL,
         .pid = 0,
-//      .rq = NULL,
-//      .tsk = NULL,
         .tmp = NULL,
-        .isFreezing = 0,
 };
 
 
@@ -99,15 +87,10 @@ int make_ro(unsigned long long address)
    y=0;
    return 0;
 }
-/*
-ffffffff80228c76 t activate_task
-ffffffff80228f71 t deactivate_task
-ffffffff80225639 t change_page_attr_set_clr
-*/
 
 int init_module()
 {
-	fs = (struct sched_job *)kzalloc(sizeof(struct sched_job_lag), GFP_KERNEL);
+	fs=(struct sched_job_lag *)kzalloc(sizeof(struct sched_job_lag),GFP_KERNEL);
 	make_rw(0xc03a98e4);
 	cfs = (void *)0xc03a98e4;
 	deactivate_task = (void *)0xc0144764;
@@ -203,8 +186,6 @@ ssize_t lag_read(struct file *target_file, char __user *buf, size_t mlength, lof
 	return sizeof(struct lag_request);
 }
 
-
-
 static struct task_struct *pick_next_task_lag(struct rq *rq)
 {
         struct task_struct *tsk=pick_next_task_fair(rq);
@@ -266,13 +247,6 @@ static struct task_struct *pick_next_task_lag(struct rq *rq)
         }
         return tsk;
 }
-
-
-
-
-
-
-
 
 void lag_wait_queue_add(lag_wait_queue *ent, lag_wait_queue *list)
 {
