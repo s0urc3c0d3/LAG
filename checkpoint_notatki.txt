@@ -130,4 +130,9 @@ ta funkcja to hardcore. Pobiera stack i rzutuje go na thread_info (zalezne od AR
 Nadal nie wiem jak to sie ma do dzialania procesu ale chyba chodzi o sposob liczenia czasu a raczej sledzenia go przez system. Pewnie do celow planowania. Ta funkcja moze zostac przerobiona i uzyta
 
 CHECKPOINT_CPU
+zalezna od ARCH. Wola tak naprawde 3 funkcje: save_cpu_regs, save_cpu_debug oraz save_cpu_fpu na parametrach h i t (h - ckpt_hdr_cpu*, t - task_struct*). Funckje wygladaja na dobre do uzycia. Oczywiscie lekkie przerobki trzeba bedzie zrobic.
+
+CHECKPOINT_TASK_OBJS
+Tutaj znow kilka funkcji ale obiecujaco to wyglada. Funkcje pilnuja zaleznosci miedzy obiektami w strukturze task_struct. Oto funkcje do przejrzenia: checkpoint_task_creds, checkpoint_task_ns, checkpoint_obj_file_table, checkpoint_obj_mm, checkpoint_obj_fs, checkpoint_obj_sem_undo, checkpoint_obj_sighand, ckpt_obj_lookup_add (sprawdza czy t->sighand musi byc zapisane) oraz czasami zawola checkpoint_obj_signal. Determinuje to zmienna typu int o nazwie first uzyta przy ckpt_obj_lookup_add
+
 
