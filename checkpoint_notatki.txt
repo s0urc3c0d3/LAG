@@ -98,6 +98,36 @@ CHECKPOINT_PIDS(struct ckpt_ctx *ctx)
 tworzona jest tablica wypelniana czyms? tableta pids_arr typu flex_array. Jest tez nadglowek typu ckpt_hdr_pids. Uzupelnianie robi funkcja checkpoint_pids_build teorie te opieram na tym, ze funkcja ta zwraca jakies liczby do nr_pids i nr_vpids typu int. Jest jeszcze checkpoint_pids_dump, ktora dokonuje faktycznego zapisu do ctx?
 
 CHECKPOINT_TREE(struct ckpt_ctx *ctx)
-
+nie ciekawa robi strukture dla NS i drzewa pidow
 
 CHECKPOINT_ALL_TASKS
+wola w petli checkpoint_task
+
+CHECKPOINT_TASK
+zwraca kod bledu? parametry to wskaznik ctx typu cpkt_ctx oraz wskaznik t typu task_struct
+calosc skupia sie na wolaniu checkpoint_task_struct, checkpoint_thread, checkpoint_restart_block, checkpoint_cpu, checkpoint_task_objs oraz checkpoint_task_signal. Jezeli ktoraz z tych funkcji zwroci blad to zapisanie stanu sie nie udalo.
+
+CHECKPOINT_TASK_STRUCT
+funkcja zapisuje kawalek task_struct. Oto pola jakie zapamietujemy:
+flags
+state
+exit_state
+exit_code
+sas_ss_sp
+sas_ss_size
+exit_signal
+pdeath_signal
+set_child_tid
+clear_child_tid
+Wolanie jest jeszcze makro? save_task_robust_futex_list(h, t) <-- t zapisujemy a h to struktura do ktorej zapisujemy (tutaj typu cpkt_hdr_task)
+Uwaga: pole flag moze byc uzypelniane o flagi: CKPT_PF_FORKNOEXEC lub CKPT_PF_SUPERPRIV. Dodatkowo jezeli t->exit_state != EXIT_ZOMBIE wolane jest BUG_ON.
+
+CHECKPOINT_THREAD
+
+
+CHECKPOINT_RESTART_BLOCK
+ta funkcja to hardcore. Pobiera stack i rzutuje go na thread_info (zalezne od ARCH). Nastepnie z tej dtruktury pole restart_block trafia do zmiennej restart_block (lokalnej dla funkcji). Dzieki temu mozna sprawdzic co zaweira wskaznik restart_block->fn. Porownujemy kilka adresow funkcji. Nie wiem jeszcze po co ale sa one zmiazane ze sposobem liczenia czasu?
+Nadal nie wiem jak to sie ma do dzialania procesu ale chyba chodzi o sposob liczenia czasu a raczej sledzenia go przez system. Pewnie do celow planowania. Ta funkcja moze zostac przerobiona i uzyta
+
+CHECKPOINT_CPU
+
