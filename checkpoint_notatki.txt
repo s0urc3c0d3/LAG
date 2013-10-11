@@ -123,7 +123,9 @@ Wolanie jest jeszcze makro? save_task_robust_futex_list(h, t) <-- t zapisujemy a
 Uwaga: pole flag moze byc uzypelniane o flagi: CKPT_PF_FORKNOEXEC lub CKPT_PF_SUPERPRIV. Dodatkowo jezeli t->exit_state != EXIT_ZOMBIE wolane jest BUG_ON.
 
 CHECKPOINT_THREAD
-
+Zalezy od ARCH
+Najpierw wola may_checkpoint_thread, ktory ocenia czy mozna zrobic checkpoint. Mozna ja uzyc ale potrzem trzeba sprawdzic czy da sie ja uzupelnic o debugregs (?).
+samo checkpoint_thread tez wyglada obiecujaco - do uzycia
 
 CHECKPOINT_RESTART_BLOCK
 ta funkcja to hardcore. Pobiera stack i rzutuje go na thread_info (zalezne od ARCH). Nastepnie z tej dtruktury pole restart_block trafia do zmiennej restart_block (lokalnej dla funkcji). Dzieki temu mozna sprawdzic co zaweira wskaznik restart_block->fn. Porownujemy kilka adresow funkcji. Nie wiem jeszcze po co ale sa one zmiazane ze sposobem liczenia czasu?
@@ -135,4 +137,19 @@ zalezna od ARCH. Wola tak naprawde 3 funkcje: save_cpu_regs, save_cpu_debug oraz
 CHECKPOINT_TASK_OBJS
 Tutaj znow kilka funkcji ale obiecujaco to wyglada. Funkcje pilnuja zaleznosci miedzy obiektami w strukturze task_struct. Oto funkcje do przejrzenia: checkpoint_task_creds, checkpoint_task_ns, checkpoint_obj_file_table, checkpoint_obj_mm, checkpoint_obj_fs, checkpoint_obj_sem_undo, checkpoint_obj_sighand, ckpt_obj_lookup_add (sprawdza czy t->sighand musi byc zapisane) oraz czasami zawola checkpoint_obj_signal. Determinuje to zmienna typu int o nazwie first uzyta przy ckpt_obj_lookup_add
 
+CHECKPOINT_TASK_SIGNAL
+Trzeba przerobic ale wyglada dobrze.
 
+CHECKPOINT_TASK_CREDS
+Wyglada na ok - mozna uzyc
+
+CHECKPOINT_TASK_NS
+
+
+CHECKPOINT_OBJ_FILE_TABLE
+CHECKPOINT_OBJ_MM
+CHECKPOINT_OBJ_FS
+CHECKPOINT_OBJ_SEM_UNDO
+CHECKPOINT_OBJ_SIGHAND
+CKPT_OBJ_LOOKUP_ADD
+CHECKPOINT_OBJ_SIGNAL
