@@ -144,12 +144,26 @@ CHECKPOINT_TASK_CREDS
 Wyglada na ok - mozna uzyc
 
 CHECKPOINT_TASK_NS
-
+pomiedzy rcu_real_lock a rcu_read_unlock wolana jest tsk_nsproxy(t), wynik zapisuje w nsproxy (typ struct nsproxy*). Dodatkowo get_nsproxy(nsproxy) - nie wiem co to robi. wlasciwe dane trafiaja do ns_objref poprzez checkpoint_obj(ctx, nsproxy, CKPT_OBJ_NS)
 
 CHECKPOINT_OBJ_FILE_TABLE
+zasada prosta: struktura files_struct jest odbierana przez get_files_struct(t). Robiony jest zrzut przez checkpoint_obj(ctx, files <-adres_zwrocony_pezez_get_files_struct, CKPT_OBJ_FILE_TABLE).
+
 CHECKPOINT_OBJ_MM
+Analogicznie jak funkcja wyzej, wolamy get_task_mm(t) i zwrocony struct mm_struct* przekazujemy: checkpoint_obj(ctx, mm, CKPT_OBJ_MM), wskaznik struct mm_struct* jest wolany jako parametr mmput(mm) - nie wiem po co...
+
 CHECKPOINT_OBJ_FS
+Pomiedzy task_lock(current) a task_unclock(current) wolany jest get_fs_struct na t->fs. Ponownie checkpoint_obj(cts, fs, CKPT_OBJ_FS). W tym przypadku put_fs_struct(t->fs) wystepuje.
+
 CHECKPOINT_OBJ_SEM_UNDO
+Ta funkcja jest nawet jeszcze prostsza, jezeli t->sysvsem.undo_list nie jest NULL to wolana jest checkpoint_obj(ctx, ulp, CKPT_OBJ_SEM_UNDO), ulp jest tupy struct sem_undo_list* i dostaje wartosc: ulp = t->sysvsem.undo_list
+
 CHECKPOINT_OBJ_SIGHAND
+
+
 CKPT_OBJ_LOOKUP_ADD
 CHECKPOINT_OBJ_SIGNAL
+
+
+CHECKPOINT_OBJ
+
