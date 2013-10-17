@@ -159,11 +159,16 @@ CHECKPOINT_OBJ_SEM_UNDO
 Ta funkcja jest nawet jeszcze prostsza, jezeli t->sysvsem.undo_list nie jest NULL to wolana jest checkpoint_obj(ctx, ulp, CKPT_OBJ_SEM_UNDO), ulp jest tupy struct sem_undo_list* i dostaje wartosc: ulp = t->sysvsem.undo_list
 
 CHECKPOINT_OBJ_SIGHAND
-
+pomiedzy rcu_read_lock a rcu_read_unlock wykonywana jest funkcje rcu_dereference(t->sighand). Wynik zapisywany jest w sighand. Nastepnie atomic_inc wykonywany jest na &sighand->count. Wlasciwy obiekt zwraca checkpoint_obj(ctx, sighand, CKPT_OBJ_SIGHAND). sighand czysci funkcje __cleanup_sighand.
 
 CKPT_OBJ_LOOKUP_ADD
-CHECKPOINT_OBJ_SIGNAL
+funkcja szuka obiektu i dodaje go do objhash. <--- sprawdzic czy jest potrzebna
+ODP - tak jest porzebna
 
+CHECKPOINT_OBJ_SIGNAL
+wola checkpoint_signal na ctx i t. Jezeli t->flags&PF_EXITING to wola makro BUG_ON
 
 CHECKPOINT_OBJ
+nie wiele robi. Tak naprawde odnajduje obiekt (ckpt_obj_lookup_add) i wola obj->ops->checkpoint(ctx,t). Nie mniej moze sie przydac
 
+ckpt_obj_ops... jak powstaje?
