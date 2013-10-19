@@ -4,6 +4,7 @@
 #include <linux/cdev.h>
 #include <linux/string.h>
 #include <linux/sched.h>
+#include <linux/percpu.h>
 #include "lag.h"
 #include <linux/slab.h>
 #include <asm/cacheflush.h>
@@ -11,8 +12,11 @@
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Grzegorz Dwornicki");
 MODULE_DESCRIPTION("This module provides /dev/lag character device for Linux Agents project");
-
 MODULE_VERSION("1.1.0");
+
+struct rq *runqueues;
+
+#define task_rq(p) (&per_cpu(runqueues, (task_cpu(p))))
 
 const char *lagdev="/dev/lag";
 
@@ -44,6 +48,7 @@ struct file_operations lagops = {
 };
 
 int lagmayor=0;
+int freezing=1;
 
 lag_wait_queue lag_wait = {
         .next = NULL,
@@ -64,27 +69,18 @@ struct sched_job_lag lag_job = {
 
 int make_rw(unsigned long long address)
 {  
-   int y;
-   y=0;
    unsigned int level;
-   y=0;
    pte_t *pte = lookup_address(address,&level);
-   y=0;
    if(pte->pte &~ _PAGE_RW)
       pte->pte |= _PAGE_RW;
-   y=0;
    return 0;
 }
 
 int make_ro(unsigned long long address)
 {
-   int y;
    unsigned int level;
-   y=0;
    pte_t *pte = lookup_address(address, &level);
-   y=0;
    pte->pte = pte->pte &~ _PAGE_RW;
-   y=0;
    return 0;
 }
 
@@ -92,6 +88,8 @@ int init_module()
 {
 	fs=(struct sched_job_lag *)kzalloc(sizeof(struct sched_job_lag),GFP_KERNEL);
 	make_rw(0xc03a98e4);
+	make_rw(0xc052fd00);
+	runqueues=0xc052fd00;
 	cfs = (void *)0xc03a98e4;
 	deactivate_task = (void *)0xc0144764;
 	activate_task = (void *)0xc0144eb4;
@@ -171,9 +169,9 @@ ssize_t lag_write(struct file *target_file, const char __user *buf, size_t mleng
 			}
 		} while ( (tlist = next_task(tlist)) != &init_task );
 	}
-	if (tmp->REQID==2)
+	if (tmp->REQID==2 || tmp->REQID==3 || tmp->REQID==4)
 	{
-		fs->REQ=2;
+		fs->REQ=tmp->REQID;
 		fs->pid=tmp->pid;
 	}
 	return mlength;
@@ -215,7 +213,7 @@ static struct task_struct *pick_next_task_lag(struct rq *rq)
                         if (fs->wait_queue->prev ==NULL) printk (KERN_DEBUG "prev jest null   \n");
                         
 			put_prev_task_fair(rq,tsk);
-			deactivate_task(rq, tsk, 1);
+			if (freezing == 1) deactivate_task(rq, tsk, 1);
                         tsk = pick_next_task_fair(rq);
                         return tsk;
                 }
@@ -234,17 +232,62 @@ static struct task_struct *pick_next_task_lag(struct rq *rq)
                 }
                 if (tmp==NULL)
                         printk(KERN_DEBUG "Blad!");
-                else
+                else {
                         fs->wait_queue=tmp->next;
                         lag_wait_queue_del(tmp);
                        
-			activate_task(tmp->rq,tmp->tsk,1);
+			if (freezing == 1 )activate_task(tmp->rq, tmp->tsk, 1);
                         
 			if (fs->wait_queue == tmp) printk(KERN_DEBUG "\n niestety kolejka jest pusta\n");
                         if (fs->wait_queue->prev == NULL || fs->wait_queue->next == NULL) fs->wait_queue = NULL;
                         lag_debug_wait_queue(fs->wait_queue);
                         kfree(tmp);
+		}
         }
+	if (fs->REQ == 3)
+	{
+		fs->REQ = 0;
+		if (freezing == 0)
+		{
+			freezing=1;
+			lag_wait_queue *tmp1,*tmp=fs->wait_queue;
+			if (tmp == NULL) return tsk;
+//			do {
+				tmp1=tmp;
+				if (tmp->tsk == NULL || tmp->rq == NULL)
+				{
+					tmp=tmp->next;
+					lag_wait_queue_del(tmp1);
+//					continue;
+					return tsk;
+				}
+//				tmp->rq=task_rq(tmp->tsk);
+				printk(KERN_DEBUG "\ndeactivate\n");
+				deactivate_task(tmp->rq, tmp->tsk, 1);
+				tmp=tmp->next; //}
+				if (tmp == tmp1) printk(KERN_DEBUG "\nrowne\n");
+//			while (tmp != fs->wait_queue);
+		}
+	}
+	if (fs->REQ == 4)
+	{
+		fs->REQ = 0;
+		if (freezing == 1)
+		{
+			freezing=0;
+			lag_wait_queue *tmp1,*tmp=fs->wait_queue;
+			if (tmp == NULL) return tsk;
+			do {
+				tmp1=tmp;
+				tmp=tmp->next; 
+				activate_task(tmp1->rq, tmp1->tsk, 1);
+				if (tmp != tmp1)
+                        		lag_wait_queue_del(tmp1);
+				else fs->wait_queue = NULL;
+				kfree(tmp1); }
+			while (fs->wait_queue != NULL);
+		}
+	}
         return tsk;
 }
 
@@ -284,3 +327,4 @@ void lag_debug_wait_queue(lag_wait_queue *ent)
         }
         printk(KERN_DEBUG "DEBUG WAIT QUEUE STOP \n");
 }
+

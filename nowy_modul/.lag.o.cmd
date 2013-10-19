@@ -635,8 +635,6 @@ deps_/root/LAG/nowy_modul/lag.o := \
   include/linux/aio_abi.h \
   include/linux/uio.h \
   /root/LAG/nowy_modul/lag.h \
-    $(wildcard include/config/x86/ptrace/bts.h) \
-    $(wildcard include/config/detect/softlockup.h) \
   include/linux/slab.h \
     $(wildcard include/config/slab/debug.h) \
     $(wildcard include/config/failslab.h) \
