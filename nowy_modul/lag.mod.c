@@ -29,7 +29,6 @@ __attribute__((section("__versions"))) = {
 	{ 0xa8ec5b05, "module_put" },
 	{ 0xd0e796cd, "init_task" },
 	{ 0x28177c4b, "kmem_cache_alloc_trace" },
-	{ 0x7ecb001b, "__per_cpu_offset" },
 	{ 0xc58cdb60, "lookup_address" },
 	{ 0x37a0cba, "kfree" },
 	{ 0xbd87173a, "class_destroy" },
@@ -44,4 +43,4 @@ __attribute__((section(".modinfo"))) =
 "depends=";
 
 
-MODULE_INFO(srcversion, "2DCBDEF92DFAD3774AEC53C");
+MODULE_INFO(srcversion, "BA30370CF9D16D89830BFCA");

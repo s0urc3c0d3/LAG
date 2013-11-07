@@ -155,6 +155,7 @@ int lag_release(struct inode *lag_inode, struct file *lag_file)
 
 ssize_t lag_write(struct file *target_file, const char __user *buf, size_t mlength, loff_t *offset)
 {
+	while (fs->REQ !=0);
 	struct lag_request *tmp;
 	tmp = (struct lag_request *) buf;
 	if (tmp->REQID==1)
@@ -190,7 +191,6 @@ static struct task_struct *pick_next_task_lag(struct rq *rq)
         if (fs->REQ == 1) {
                 if (tsk!=NULL && fs->pid==tsk->pid)
                 {
-			fs->REQ=0;
 			printk (KERN_DEBUG "debug");
 			
                         fs->tmp->tsk=tsk;
@@ -215,11 +215,11 @@ static struct task_struct *pick_next_task_lag(struct rq *rq)
 			put_prev_task_fair(rq,tsk);
 			if (freezing == 1) deactivate_task(rq, tsk, 1);
                         tsk = pick_next_task_fair(rq);
+			fs->REQ=0;
                         return tsk;
                 }
         }
         if (fs->REQ == 2) {
-                fs->REQ=0;
                 lag_wait_queue *tmp=fs->wait_queue;
                 while (tmp !=NULL && tmp->tsk->pid != fs->pid )
                 {
@@ -243,35 +243,38 @@ static struct task_struct *pick_next_task_lag(struct rq *rq)
                         lag_debug_wait_queue(fs->wait_queue);
                         kfree(tmp);
 		}
+                fs->REQ=0;
         }
 	if (fs->REQ == 3)
 	{
-		fs->REQ = 0;
 		if (freezing == 0)
 		{
 			freezing=1;
-			lag_wait_queue *tmp1,*tmp=fs->wait_queue;
-			if (tmp == NULL) return tsk;
-//			do {
-				tmp1=tmp;
-				if (tmp->tsk == NULL || tmp->rq == NULL)
-				{
-					tmp=tmp->next;
-					lag_wait_queue_del(tmp1);
-//					continue;
-					return tsk;
-				}
-//				tmp->rq=task_rq(tmp->tsk);
-				printk(KERN_DEBUG "\ndeactivate\n");
-				deactivate_task(tmp->rq, tmp->tsk, 1);
-				tmp=tmp->next; //}
-				if (tmp == tmp1) printk(KERN_DEBUG "\nrowne\n");
-//			while (tmp != fs->wait_queue);
+			fs->tmp=fs->wait_queue;
+			printk(KERN_DEBUG "op3 pierwszy:%i\n",fs->tmp->tsk->pid);
+		}
+		if (tsk!=NULL && fs->wait_queue != NULL && fs->tmp->tsk==tsk)
+		{	
+			lag_wait_queue *tmp1,*tmp=fs->tmp;
+			tmp1=tmp;
+			if (tmp->tsk == NULL || tmp->rq == NULL)
+			{
+				tmp=tmp->next;
+				lag_wait_queue_del(tmp1);
+				return tsk;
+			}
+			deactivate_task(rq, tsk, 1);
+			tmp->tsk=tsk;
+			tmp->rq=rq;
+			put_prev_task_fair(rq,tsk);
+			tsk = pick_next_task_fair(rq);
+			fs->tmp=tmp->next; 
+			if (fs->wait_queue == fs->tmp) fs->REQ = 0;
+			printk(KERN_DEBUG "teraz op3 jest na:%i z %i a REQ %i\n",fs->tmp->tsk->pid, fs->wait_queue->tsk->pid, fs->REQ);
 		}
 	}
 	if (fs->REQ == 4)
 	{
-		fs->REQ = 0;
 		if (freezing == 1)
 		{
 			freezing=0;
@@ -287,6 +290,7 @@ static struct task_struct *pick_next_task_lag(struct rq *rq)
 				kfree(tmp1); }
 			while (fs->wait_queue != NULL);
 		}
+		fs->REQ = 0;
 	}
         return tsk;
 }
